@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sourceledger"
+version = "0.1.0"
+description = "A local source-change review queue for Markdown knowledge bases"
+requires-python = ">=3.10"
+authors = [{name = "zhukewei", email = "kewei.zhu@outlook.com"}]
+
+[project.scripts]
+sourceledger = "sourceledger.cli:main"
+
+[tool.setuptools]
+packages = ["sourceledger"]

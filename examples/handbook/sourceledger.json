@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "dependencies": [
+    {"note": "onboarding.md", "source": "policy.md", "heading": "Access"},
+    {"note": "onboarding.md", "source": "support.md"}
+  ]
+}
