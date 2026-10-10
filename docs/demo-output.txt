@@ -1,0 +1,28 @@
+SourceLedger | local source review
+0 new, 1 changed, 1 current, 0 error
+
+[CHANGED] onboarding.md ← policy.md → Access [1]
+--- accepted
++++ current
+@@ -1,4 +1,4 @@
+ ## Access
+ 
+-Temporary access lasts 30 days. A manager must approve it.
++Temporary access lasts 14 days. A manager must approve it.
+ 
+
+
+[CURRENT] onboarding.md ← support.md
+
+Review token: 642a4be99a3cb6fbed0a45a223301c16e74c5abf2150a7249a14531717f9e735
+Checking does not accept changes. Use accept --token TOKEN only after reviewing.
+
+SourceLedger | acceptance history (newest first)
+
+#1 2026-10-10T16:23:54.767036+00:00 | scope: all tracked notes
+  onboarding.md <- policy.md / 'Access' [1]
+    revision 1 | source SHA-256 279ecd763f3646b3b660dcd955aa349d226c64b91cdebe3b8ee5904506f8d7ac
+  onboarding.md <- support.md / whole file
+    revision 1 | source SHA-256 98ef649bdafa96d2df1780a7a028c1112b3550b7e39d5a8540e960a5f62c4223
+
+Open demo-report.html to inspect the static report. Demo data was temporary.

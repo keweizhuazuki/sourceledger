@@ -88,6 +88,23 @@ Use the same `--note` selection for checking and acceptance. A token changes whe
 
 Exit codes: `0` all selected sources current / action succeeded; `1` new or changed sources require review; `2` invalid configuration, missing source/note/section, unreadable file, or operation error. A missing or renamed source is an error, never an accepted deletion. Correct the path deliberately and review the new dependency.
 
+## Inspect acceptance history
+
+```sh
+sourceledger --root ./handbook history
+sourceledger --root ./handbook history --note notes/onboarding.md --limit 5
+sourceledger --root ./handbook history --before 12 --limit 5
+sourceledger --root ./handbook history --format json
+```
+
+Every successful `accept` now records one batch with a UTC timestamp, review token, selection scope, and each accepted dependency's revision, exact source snapshot, previous snapshot, and note hash. Text shows source identities and SHA-256 fingerprints; JSON includes the saved source text. History never rereads sources or needs a valid manifest, so removed/renamed files and removed dependencies remain inspectable.
+
+Newest batch IDs come first. `--limit` accepts 1–100 batches (default 20); `--before` provides stable pagination while new acceptances arrive. With `--note`, both batches and their displayed entries are filtered to that exact note. Keep that filter when following the next-page hint. Reaccepting unchanged content records an additional explicit review and advances its revision.
+
+Old databases migrate automatically without changing existing baselines or their revisions. Earlier acceptance times were never stored and are not invented: history begins with the next successful acceptance. Failed or stale acceptance writes neither a batch nor partial history. Timestamps use the local machine's UTC clock; this is local review evidence, not a signed or tamper-proof audit log. The database stores repeated source snapshots and grows over time; there is no automatic retention/pruning. Back it up and treat JSON history exports as potentially sensitive.
+
+The [runnable demo output](docs/demo-output.txt) includes a real initial acceptance record; its timestamp and token are examples, not values to reuse.
+
 ## Data and safety boundaries
 
 - Accepted source text is stored locally in `.sourceledger/state.sqlite3`. Treat it as sensitive if your sources are sensitive; keep it out of public Git history. Back it up to preserve reviews.
@@ -112,8 +129,10 @@ Verified on 2026-10-11 (Asia/Shanghai): [CI run 38066938074](https://github.com/
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; 24 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; 35 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
-Next: local Markdown-link discovery with review before tracking; a richer acceptance history; deterministic anchor mapping for more Markdown dialects; CI baseline import/export; optional Git rename suggestions. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
+See the [completed changes](CHANGELOG.md).
+
+Next: local Markdown-link discovery with review before tracking; deterministic anchor mapping for more Markdown dialects; CI baseline import/export; optional Git rename suggestions. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
 
 No license has been selected or granted by this repository.
