@@ -11,7 +11,7 @@ Skipped discovery/note.md:8 https://example.com/policy
   External URL or URI scheme skipped; discovery never fetches network sources
 
 Skipped discovery/note.md:9 ../handbook/policy.md#nonexistent
-  Unresolved fragment #nonexistent; no supported plain-ATX anchor matches
+  Unresolved fragment #nonexistent; no supported literal-ATX anchor matches
 
 Skipped discovery/note.md:10 #team-onboarding-notes
   Same-document navigation skipped; it is not an external source dependency

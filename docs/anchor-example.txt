@@ -1,0 +1,34 @@
+SourceLedger | review-only link discovery
+8 candidates, 2 skipped/warnings
+
+Candidate from line(s) 3:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "Install (Linux/macOS)", "occurrence": 1}
+
+Candidate from line(s) 4:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "What's new?", "occurrence": 1}
+
+Candidate from line(s) 5:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "Version 2.0", "occurrence": 1}
+
+Candidate from line(s) 6:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "FAQ!", "occurrence": 1}
+
+Candidate from line(s) 7:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "FAQ", "occurrence": 1}
+
+Candidate from line(s) 8:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "FAQ-1", "occurrence": 1}
+
+Candidate from line(s) 9:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "FAQ!", "occurrence": 2}
+
+Candidate from line(s) 10:
+{"note": "anchor-note.md", "source": "anchor-policy.md", "heading": "api_key", "occurrence": 1}
+
+Skipped anchor-note.md:13 anchor-unsupported.md#access
+  Fragment requires manual review: underscores may be emphasis markup; only intraword underscores are supported
+
+Skipped anchor-note.md:14 anchor-unsupported.md#_access_
+  Fragment requires manual review: underscores may be emphasis markup; only intraword underscores are supported
+
+Review candidates, then copy selected dependency objects into sourceledger.json. This proposal is not a manifest. Run check and explicitly accept after reviewing source content.

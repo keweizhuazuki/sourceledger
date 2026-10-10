@@ -1,5 +1,14 @@
 # Completed changes / 已完成变更
 
+## Literal heading anchors / 字面标题锚点 — 2026-10-11 Asia/Shanghai
+
+- Added bounded GitHub-style anchor mapping for common literal ASCII punctuation in README headings, preserving raw titles and duplicate occurrences.
+- Fixed `_Access_` incorrectly matching `#_access_`; emphasis-capable underscores, unsupported markup/punctuation and emoji-shortcode-like text now explicitly require manual review.
+- Validate every target heading before matching, preserving collision safety and the review-only proposal boundary.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38078099367): 131 tests across six OS/Python jobs and Chromium passed. Added synthetic collision/underscore/punctuation examples and six regression tests, with official GitHub/CommonMark references in both READMEs.
+
+支持 README 标题中的常见字面 ASCII 标点，保留原始标题及出现次数；修复强调下划线的错误候选。所有标题验证后才匹配，明确跳过不支持形式，仍需人工复核。补充碰撞、下划线及标点示例和回归测试，并同步官方依据。
+
 ## Reviewed baseline import / 需复核的基线导入 — 2026-10-11 Asia/Shanghai
 
 - Added no-write `import-baseline` previews with exact accepted contents, manifest-matched scope and an explicit import token.
