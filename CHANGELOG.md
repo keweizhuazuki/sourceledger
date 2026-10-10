@@ -6,6 +6,7 @@
 - Separate text/JSON proposals cannot silently become the active manifest. Users explicitly select and copy dependencies, then use the existing check/accept workflow.
 - No database access, baseline mutation or network requests. Unsupported syntax, escaped-root paths and unresolved sources/fragments are visible in the report.
 - Added a runnable mixed-case fixture, synchronized documentation, and regressions for the review boundary and parsing/path cases.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38068508378): 65 tests across six OS/Python combinations plus Chromium checks; OS-specific tests skip where the relevant facility is unavailable.
 - Hardened reads against pipes/devices and symlink loops; preserved symlinked notes’ logical relative-link base and literal filename entities; conservatively skipped unsupported markup.
 
 新增只读候选发现、路径/片段解析、去重与行号；候选报告不能直接作为清单使用，需人工选择后走原有复核确认流程。不访问数据库或网络，并提供跳过原因、真实示例和回归测试。

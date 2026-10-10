@@ -146,7 +146,7 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-Verified on 2026-10-11 (Asia/Shanghai): [CI run 38067579257](https://github.com/keweizhuazuki/sourceledger/actions/runs/38067579257) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 37 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation; named-pipe tests skip where that OS facility is unavailable. These checks do not establish support for every filesystem or Markdown dialect.
+Verified on 2026-10-11 (Asia/Shanghai): [CI run 38068508378](https://github.com/keweizhuazuki/sourceledger/actions/runs/38068508378) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 65 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation; named-pipe tests skip where that OS facility is unavailable. These checks do not establish support for every filesystem or Markdown dialect.
 
 ## Completed and next upgrades
 
