@@ -1,5 +1,14 @@
 # Completed changes / 已完成变更
 
+## Reviewed baseline import / 需复核的基线导入 — 2026-10-11 Asia/Shanghai
+
+- Added no-write `import-baseline` previews with exact accepted contents, manifest-matched scope and an explicit import token.
+- Token-bound import initializes empty ledgers only. Snapshot, manifest and emptiness are rechecked under the write lock; baselines and provenance commit atomically. Existing data/history is never overwritten.
+- Schema 2 preserves separate import provenance and existing local acceptance history. Imported timestamps are never presented as original acceptance times; current edits still require normal review.
+- Added migration, rollback, concurrency, stale-preview, no-write and provenance-filter tests plus a disposable synthetic demo; synchronized both README languages and actual output.
+
+新增只读预览与令牌绑定的空数据库导入；事务内重新验证快照、清单及空状态，禁止覆盖。结构版本 2 单独保存准确导入记录并保留原确认历史；补充迁移、回滚、并发、过期预览及筛选测试和真实合成示例。
+
 ## Portable accepted baselines / 便携已确认基线 — 2026-10-11 Asia/Shanghai
 
 - Added deterministic `export-baseline` for complete accepted manifest coverage, with exclusive new-file output and no promotion of unaccepted edits.
@@ -60,6 +69,6 @@
 
 ## Next / 下一步
 
-Explicit reviewed import into an empty ledger with accurate provenance; more Markdown anchor dialects. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
+More Markdown anchor dialects; import/history retention ergonomics based on real usage. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
 
-下一步考虑需明确复核的空数据库导入及准确来源记录、更多锚点规则。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。
+下一步考虑更多锚点规则，并根据实际使用改进导入/历史保留体验。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。

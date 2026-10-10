@@ -167,7 +167,29 @@ Export includes only previously accepted source text and note hashes for the cur
 
 The strict version-1 JSON format includes dependency identities, accepted source text, SHA-256 content hashes and accepted note hashes. Limits: 8 MiB snapshot, 2 MiB accepted text per entry, 10,000 entries. Unknown versions/fields, duplicate JSON fields/dependencies, invalid paths/types/hashes and malformed UTF-8 are rejected. Content hashes establish internal consistency, **not provenance or authenticity**. CI must obtain a trusted reviewed snapshot independently of the change under test; accepting a modified baseline from that same change can conceal source changes. This tool does not enforce branch policy.
 
-Snapshots contain source excerpts and file paths. Keep sensitive snapshots private; do not automatically commit or publish them. The [actual synthetic demo output](docs/baseline-example.txt) and [HTML report](docs/baseline-report.html) contain no user data. Import, historical acceptance transfer and baseline merging are deferred; no acceptance history is fabricated.
+Snapshots contain source excerpts and file paths. Keep sensitive snapshots private; do not automatically commit or publish them. The [actual synthetic demo output](docs/baseline-example.txt) and [HTML report](docs/baseline-report.html) contain no user data. Historical acceptance transfer and baseline merging are unsupported; reviewed empty-ledger import is described below. No acceptance history is fabricated.
+
+## Explicitly import a reviewed baseline
+
+Use import only to initialize an **empty** local ledger from a snapshot you trust. CI users can continue using `check --baseline` without any import.
+
+```sh
+sourceledger --root ./fresh-checkout import-baseline reviewed-baseline.json
+sourceledger --root ./fresh-checkout import-baseline reviewed-baseline.json --token IMPORT_TOKEN
+sourceledger --root ./fresh-checkout history
+sourceledger --root ./fresh-checkout check
+python examples/import_demo.py
+```
+
+The first command is a no-write preview: it shows exact accepted source text, dependency identities, hashes and an import token. Inspect that evidence and independently establish the snapshot's trusted provenance. `--format json` is available. Only the explicit token command writes. The token binds the snapshot and matching manifest; a modified snapshot/manifest or a nonempty destination rejects import. An import token is a stale-preview guard, not authentication or a local acceptance token.
+
+Import requires an exact dependency-identity match with the current manifest and no baseline, acceptance-history or previous-import rows in the destination. It never merges or overwrites a used ledger, even if only historical records remain. Preview does not create storage or migrate existing schema. Read-only inspection refuses externally configured WAL databases rather than creating sidecars. Snapshot comparison remains database-free.
+
+Applying import rechecks the snapshot, manifest, token and empty state inside a SQLite write transaction. Baselines and import provenance commit together or roll back together; competing imports cannot both succeed. Invalid preview tokens fail before creating storage. After a valid preview, a later I/O or transaction failure may leave an empty initialized/migrated database, but no partial imported rows. Stop external database maintenance and concurrent filesystem manipulation during import.
+
+Imported baselines start at local revision 1. `history` lists import time, snapshot digest and exact imported entries **separately from local acceptance batches**; it does not invent an original acceptance time. Import provenance is retained after later acceptances and appears separately on every history page (with the same note filter). Existing databases migrate transactionally to schema 2 without changing their accepted content or history.
+
+Import transfers trust in the saved baseline, not approval of current working files. Sources/notes may already differ or be missing; a subsequent ordinary `check` reports those differences/errors, and genuine `accept` records a new local acceptance. Files are never rewritten. See the [actual synthetic import example](docs/import-example.txt). Snapshot hashes remain integrity checks, not proof of origin. No snapshot upload, remote fetching or automatic acceptance is performed.
 
 ## Data and safety boundaries
 
@@ -193,10 +215,10 @@ Verified on 2026-10-11 (Asia/Shanghai): [CI run 38076905944](https://github.com/
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; read-only exact staged Git replacement suggestions; portable accepted-baseline export and database-free CI snapshot checks; 105 regression tests; controlled invalid-root errors; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; read-only exact staged Git replacement suggestions; portable accepted-baseline export and database-free CI snapshot checks; reviewed empty-ledger import with separate provenance; 125 regression tests; controlled invalid-root errors; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 See the [completed changes](CHANGELOG.md).
 
-Next: explicit reviewed import into an empty ledger with accurate import provenance; deterministic anchor mapping for more Markdown dialects. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
+Next: deterministic anchor mapping for more Markdown dialects; import/history retention ergonomics based on actual usage. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
 
 No license has been selected or granted by this repository.

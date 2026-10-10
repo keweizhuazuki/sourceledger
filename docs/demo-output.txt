@@ -28,9 +28,9 @@ SourceLedger | local source review
 Review token: 642a4be99a3cb6fbed0a45a223301c16e74c5abf2150a7249a14531717f9e735
 Checking does not accept changes. Use accept --token TOKEN only after reviewing.
 
-SourceLedger | acceptance history (newest first)
+SourceLedger | local acceptance history and import provenance
 
-#1 2026-10-10T16:32:55.956722+00:00 | scope: all tracked notes
+#1 2026-10-10T18:49:18.622085+00:00 | scope: all tracked notes
   onboarding.md <- policy.md / 'Access' [1]
     revision 1 | source SHA-256 279ecd763f3646b3b660dcd955aa349d226c64b91cdebe3b8ee5904506f8d7ac
   onboarding.md <- support.md / whole file

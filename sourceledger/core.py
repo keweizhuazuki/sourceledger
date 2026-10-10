@@ -125,18 +125,31 @@ def connect(root):
     db = sqlite3.connect(safe_path(root, ".sourceledger/state.sqlite3"), timeout=10)
     try:
         version = db.execute("PRAGMA user_version").fetchone()[0]
-        if version > 1:
+        if version > 2:
             raise LedgerError(f"Database schema {version} is newer than this SourceLedger supports")
-        if version == 0:
-            # The original database only had baselines. Preserve every baseline and
-            # never fabricate acceptance timestamps for legacy records.
+        if version not in (0, 1, 2):
+            raise LedgerError(f"Unsupported database schema: {version}")
+        if version < 2:
             with db:
                 db.execute("BEGIN IMMEDIATE")
-                db.execute("CREATE TABLE IF NOT EXISTS baselines (key TEXT PRIMARY KEY, content TEXT NOT NULL, note_hash TEXT NOT NULL, revision INTEGER NOT NULL)")
-                db.execute("CREATE TABLE IF NOT EXISTS acceptance_batches (id INTEGER PRIMARY KEY, accepted_at TEXT NOT NULL, review_token TEXT NOT NULL, scope_note TEXT)")
-                db.execute("CREATE TABLE IF NOT EXISTS acceptance_entries (batch_id INTEGER NOT NULL REFERENCES acceptance_batches(id), key TEXT NOT NULL, note TEXT NOT NULL, revision INTEGER NOT NULL, before_content TEXT, content TEXT NOT NULL, note_hash TEXT NOT NULL, PRIMARY KEY(batch_id,key))")
-                db.execute("CREATE INDEX IF NOT EXISTS history_note ON acceptance_entries(note,batch_id)")
-                db.execute("PRAGMA user_version=1")
+                # Another connection may have migrated while we waited for the
+                # write lock. Read the schema again inside the transaction.
+                version = db.execute("PRAGMA user_version").fetchone()[0]
+                if version > 2:
+                    raise LedgerError(f"Database schema {version} is newer than this SourceLedger supports")
+                if version not in (0, 1, 2):
+                    raise LedgerError(f"Unsupported database schema: {version}")
+                if version == 0:
+                    # Preserve legacy baselines without inventing acceptances.
+                    db.execute("CREATE TABLE IF NOT EXISTS baselines (key TEXT PRIMARY KEY, content TEXT NOT NULL, note_hash TEXT NOT NULL, revision INTEGER NOT NULL)")
+                    db.execute("CREATE TABLE IF NOT EXISTS acceptance_batches (id INTEGER PRIMARY KEY, accepted_at TEXT NOT NULL, review_token TEXT NOT NULL, scope_note TEXT)")
+                    db.execute("CREATE TABLE IF NOT EXISTS acceptance_entries (batch_id INTEGER NOT NULL REFERENCES acceptance_batches(id), key TEXT NOT NULL, note TEXT NOT NULL, revision INTEGER NOT NULL, before_content TEXT, content TEXT NOT NULL, note_hash TEXT NOT NULL, PRIMARY KEY(batch_id,key))")
+                    db.execute("CREATE INDEX IF NOT EXISTS history_note ON acceptance_entries(note,batch_id)")
+                if version < 2:
+                    # Import provenance is separate from local acceptance. Keep
+                    # the entire snapshot so later acceptance cannot rewrite it.
+                    db.execute("CREATE TABLE IF NOT EXISTS baseline_imports (id INTEGER PRIMARY KEY, imported_at TEXT NOT NULL, snapshot_digest TEXT NOT NULL, import_token TEXT NOT NULL, snapshot_json TEXT NOT NULL)")
+                    db.execute("PRAGMA user_version=2")
     except (sqlite3.Error, LedgerError):
         db.close()
         raise
@@ -196,7 +209,11 @@ def accept(root, token, note=None):
 
 
 def history(root, note=None, limit=20, before=None):
-    """Read persisted acceptance evidence even if source files or manifest vanished."""
+    """Read acceptance and import evidence even if current files vanished.
+
+    Acceptance batches retain their own pagination. Import provenance is a
+    separate, unpaginated list included on every page and filtered by note.
+    """
     if type(limit) is not int or not 1 <= limit <= 100:
         raise LedgerError("History limit must be an integer between 1 and 100")
     if before is not None and (type(before) is not int or not 1 <= before <= 9223372036854775807):
@@ -219,4 +236,15 @@ def history(root, note=None, limit=20, before=None):
                                      "accepted": content, "source_hash": digest(content), "note_hash": note_hash})
             results.append({"id": batch_id, "accepted_at": timestamp, "review_token": token,
                             "scope_note": scope, "dependencies": dependencies})
-        return {"version": 1, "batches": results, "next_before": results[-1]["id"] if more else None}
+        imports = []
+        for import_id, timestamp, snapshot_digest, token, snapshot_json in db.execute(
+            "SELECT id,imported_at,snapshot_digest,import_token,snapshot_json FROM baseline_imports ORDER BY id DESC"
+        ):
+            entries = json.loads(snapshot_json)["dependencies"]
+            selected = [entry for entry in entries if note is None or entry["dependency"]["note"] == note]
+            if selected:
+                imports.append({"id": import_id, "imported_at": timestamp,
+                                "snapshot_digest": snapshot_digest, "import_token": token,
+                                "dependency_count": len(entries), "dependencies": selected})
+        return {"version": 1, "batches": results, "imports": imports,
+                "next_before": results[-1]["id"] if more else None}

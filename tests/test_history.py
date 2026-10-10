@@ -121,7 +121,7 @@ class HistoryTests(unittest.TestCase):
         self.accept()
         self.assertEqual(history(self.root)['batches'][0]['dependencies'][0]['revision'], 8)
         with contextlib.closing(connect(self.root)) as db:
-            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 1)
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 2)
 
     def test_history_survives_removed_manifest_notes_and_sources(self):
         self.accept()
