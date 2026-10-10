@@ -1,0 +1,12 @@
+After git mv, check reports: {'new': 0, 'changed': 0, 'current': 1, 'error': 1}
+SourceLedger | staged Git rename suggestions
+HEAD: d3c4a6d4e29f6f4a5956438ee458221f6ea65914
+Evidence comes from the index; working files may have unstaged edits.
+
+Missing: policy.md
+Exact blob identity in staged deletion/addition; review every candidate
+  Candidate: access-policy.md | staged blob 6a76a6bc999bca15652e87ef9b13cd2f2a3fe2bb
+
+Suggestions are not confirmed renames. Review paths and current content, edit the manifest yourself, then check and explicitly accept new dependency identities. No files, Git metadata or baselines were changed.
+
+Verified manifest, Git index and baseline database stayed byte-identical. All fixture files were temporary.

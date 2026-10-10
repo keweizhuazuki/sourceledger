@@ -9,6 +9,7 @@ import sqlite3
 from pathlib import Path
 from .core import LedgerError, accept, check, read_text, sections, history
 from .discovery import discover
+from .renames import suggest_renames
 
 
 def diff(row):
@@ -41,6 +42,21 @@ def render_html(report):
         cards.append(f'<article><span class="status {esc(row["status"])}">{esc(row["status"])}</span><h2>{esc(row["note"])}</h2><p>{esc(row["source"])} · {esc(row.get("heading", "whole file"))} · occurrence {row.get("occurrence", 1)}</p><pre>{esc(detail)}</pre></article>')
     summary = " · ".join(f"{count} {status}" for status, count in report["summary"].items())
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>SourceLedger review</title><style>body{{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f2f5f8;color:#192e40}}header,article{{background:white;padding:24px;border-radius:12px;margin:16px 0;border:1px solid #d8e1ea}}h1{{font-size:36px;margin:8px 0}}h2{{font-size:20px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fa;padding:16px;border-radius:8px}}.status{{text-transform:uppercase;font-size:12px;font-weight:700;padding:5px 9px;border-radius:20px;background:#dfe8f1}}.changed,.new{{background:#ffedb3}}.error{{background:#ffcfcd}}.current{{background:#cbeedd}}code{{overflow-wrap:anywhere}}</style><header><small>LOCAL KNOWLEDGE · HUMAN REVIEW</small><h1>SourceLedger</h1><p>{esc(summary)}</p><p>Source changes identify notes to review. They do not prove a note is wrong or correct.</p></header>{''.join(cards)}<footer><p>Review token: <code>{report['review_token']}</code></p><p>This static report never accepts changes or loads external resources. Run the CLI accept command after review.</p></footer></html>'''
+
+
+def render_renames(report):
+    lines = ["SourceLedger | staged Git rename suggestions", "HEAD: " + report['head'], "Evidence comes from the index; working files may have unstaged edits."]
+    if not report['suggestions']:
+        lines.append("No missing manifest note/source paths.")
+    for item in report['suggestions']:
+        lines.append(f"\nMissing: {item['missing_path']}" + (" [AMBIGUOUS]" if item['ambiguous'] else ""))
+        lines.append(item['reason'])
+        for candidate in item['candidates']:
+            lines.append(f"  Candidate: {candidate['path']} | staged blob {candidate['staged_blob']}")
+        for skipped in item['skipped_candidates']:
+            lines.append(f"  Skipped: {skipped['path']} | {skipped['reason']}")
+    lines.extend(["", report['instructions']])
+    return "\n".join(lines) + "\n"
 
 
 def render_discovery(report):
@@ -89,6 +105,8 @@ def main(argv=None):
     approve = sub.add_parser("accept", help="explicitly accept the exact inspected snapshot")
     approve.add_argument("--token", required=True)
     approve.add_argument("--note")
+    rename = sub.add_parser("suggest-renames", help="read-only candidates for missing paths from exact staged Git blobs")
+    rename.add_argument("--format", choices=["text", "json"], default="text")
     discovery = sub.add_parser("discover", help="propose local inline-link dependencies without changing tracking or baselines")
     discovery.add_argument("notes", nargs='+', help="Markdown note paths relative to root")
     discovery.add_argument("--format", choices=["text", "json"], default="text")
@@ -114,6 +132,10 @@ def main(argv=None):
             return 0
         if args.command == "headings":
             print(json.dumps(sections(read_text(root, args.source)), ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "suggest-renames":
+            report = suggest_renames(root)
+            sys.stdout.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n" if args.format == "json" else render_renames(report))
             return 0
         if args.command == "discover":
             report = discover(root, args.notes)
