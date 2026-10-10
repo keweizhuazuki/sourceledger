@@ -7,7 +7,7 @@ import json
 import sys
 import sqlite3
 from pathlib import Path
-from .core import LedgerError, accept, check, read_text, sections
+from .core import LedgerError, accept, check, read_text, sections, history
 
 
 def diff(row):
@@ -42,6 +42,21 @@ def render_html(report):
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>SourceLedger review</title><style>body{{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f2f5f8;color:#192e40}}header,article{{background:white;padding:24px;border-radius:12px;margin:16px 0;border:1px solid #d8e1ea}}h1{{font-size:36px;margin:8px 0}}h2{{font-size:20px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fa;padding:16px;border-radius:8px}}.status{{text-transform:uppercase;font-size:12px;font-weight:700;padding:5px 9px;border-radius:20px;background:#dfe8f1}}.changed,.new{{background:#ffedb3}}.error{{background:#ffcfcd}}.current{{background:#cbeedd}}code{{overflow-wrap:anywhere}}</style><header><small>LOCAL KNOWLEDGE · HUMAN REVIEW</small><h1>SourceLedger</h1><p>{esc(summary)}</p><p>Source changes identify notes to review. They do not prove a note is wrong or correct.</p></header>{''.join(cards)}<footer><p>Review token: <code>{report['review_token']}</code></p><p>This static report never accepts changes or loads external resources. Run the CLI accept command after review.</p></footer></html>'''
 
 
+def render_history(report):
+    lines = ["SourceLedger | acceptance history (newest first)"]
+    if not report["batches"]:
+        lines.append("No recorded acceptances. Legacy baselines do not have historical timestamps.")
+    for batch in report["batches"]:
+        lines.append(f"\n#{batch['id']} {batch['accepted_at']} | scope: {batch['scope_note'] or 'all tracked notes'}")
+        for dep in batch["dependencies"]:
+            section = "whole file" if dep["heading"] is None else f"{dep['heading']!r} [{dep['occurrence']}]"
+            lines.append(f"  {dep['note']} <- {dep['source']} / {section}")
+            lines.append(f"    revision {dep['revision']} | source SHA-256 {dep['source_hash']}")
+    if report["next_before"] is not None:
+        lines.append(f"\nMore history: rerun with --before {report['next_before']} and the same --note filter.")
+    return "\n".join(lines) + "\n"
+
+
 def configure_output():
     """Use UTF-8 for redirected output as well as modern Windows terminals."""
     for stream in (sys.stdout, sys.stderr):
@@ -61,6 +76,11 @@ def main(argv=None):
     approve = sub.add_parser("accept", help="explicitly accept the exact inspected snapshot")
     approve.add_argument("--token", required=True)
     approve.add_argument("--note")
+    past = sub.add_parser("history", help="inspect prior explicit acceptances, including removed dependencies")
+    past.add_argument("--note", help="filter entries by exact note path")
+    past.add_argument("--limit", type=int, default=20, help="number of batches, 1-100 (default: 20)")
+    past.add_argument("--before", type=int, help="show batches older than this ID")
+    past.add_argument("--format", choices=["text", "json"], default="text")
     headings = sub.add_parser("headings", help="list exact ATX heading names and duplicate occurrences")
     headings.add_argument("source")
     sub.add_parser("init", help="create an editable starter manifest without overwriting existing files")
@@ -77,6 +97,10 @@ def main(argv=None):
             return 0
         if args.command == "headings":
             print(json.dumps(sections(read_text(root, args.source)), ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "history":
+            report = history(root, args.note, args.limit, args.before)
+            print(json.dumps(report, ensure_ascii=False, indent=2) if args.format == "json" else render_history(report), end="\n" if args.format == "json" else "")
             return 0
         if args.command == "accept":
             count = accept(root, args.token, args.note)

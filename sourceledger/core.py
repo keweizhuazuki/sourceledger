@@ -5,6 +5,7 @@ import json
 import re
 import sqlite3
 from contextlib import closing
+from datetime import datetime, timezone
 from pathlib import Path
 
 MAX_BYTES = 2 * 1024 * 1024
@@ -117,8 +118,20 @@ def connect(root):
     directory.mkdir(exist_ok=True)
     db = sqlite3.connect(safe_path(root, ".sourceledger/state.sqlite3"), timeout=10)
     try:
-        db.execute("CREATE TABLE IF NOT EXISTS baselines (key TEXT PRIMARY KEY, content TEXT NOT NULL, note_hash TEXT NOT NULL, revision INTEGER NOT NULL)")
-    except sqlite3.Error:
+        version = db.execute("PRAGMA user_version").fetchone()[0]
+        if version > 1:
+            raise LedgerError(f"Database schema {version} is newer than this SourceLedger supports")
+        if version == 0:
+            # The original database only had baselines. Preserve every baseline and
+            # never fabricate acceptance timestamps for legacy records.
+            with db:
+                db.execute("BEGIN IMMEDIATE")
+                db.execute("CREATE TABLE IF NOT EXISTS baselines (key TEXT PRIMARY KEY, content TEXT NOT NULL, note_hash TEXT NOT NULL, revision INTEGER NOT NULL)")
+                db.execute("CREATE TABLE IF NOT EXISTS acceptance_batches (id INTEGER PRIMARY KEY, accepted_at TEXT NOT NULL, review_token TEXT NOT NULL, scope_note TEXT)")
+                db.execute("CREATE TABLE IF NOT EXISTS acceptance_entries (batch_id INTEGER NOT NULL REFERENCES acceptance_batches(id), key TEXT NOT NULL, note TEXT NOT NULL, revision INTEGER NOT NULL, before_content TEXT, content TEXT NOT NULL, note_hash TEXT NOT NULL, PRIMARY KEY(batch_id,key))")
+                db.execute("CREATE INDEX IF NOT EXISTS history_note ON acceptance_entries(note,batch_id)")
+                db.execute("PRAGMA user_version=1")
+    except (sqlite3.Error, LedgerError):
         db.close()
         raise
     return db
@@ -163,8 +176,41 @@ def accept(root, token, note=None):
             raise LedgerError("Cannot accept while a tracked note/source/section is missing or unreadable")
         if token != report["review_token"]:
             raise LedgerError("Review token is stale or incorrect. Run check and review the new report")
+        batch = db.execute("INSERT INTO acceptance_batches(accepted_at,review_token,scope_note) VALUES (?,?,?)",
+                           (datetime.now(timezone.utc).isoformat(timespec="microseconds"), token, note)).lastrowid
         for dep in report["dependencies"]:
             key = dependency_key(dep)
+            previous = db.execute("SELECT content FROM baselines WHERE key=?", (key,)).fetchone()
             db.execute("INSERT INTO baselines VALUES (?,?,?,1) ON CONFLICT(key) DO UPDATE SET content=excluded.content,note_hash=excluded.note_hash,revision=baselines.revision+1",
                        (key, dep["after"], dep["note_hash"]))
+            revision = db.execute("SELECT revision FROM baselines WHERE key=?", (key,)).fetchone()[0]
+            db.execute("INSERT INTO acceptance_entries VALUES (?,?,?,?,?,?,?)",
+                       (batch, key, dep["note"], revision, previous[0] if previous else None, dep["after"], dep["note_hash"]))
         return len(report["dependencies"])
+
+
+def history(root, note=None, limit=20, before=None):
+    """Read persisted acceptance evidence even if source files or manifest vanished."""
+    if type(limit) is not int or not 1 <= limit <= 100:
+        raise LedgerError("History limit must be an integer between 1 and 100")
+    if before is not None and (type(before) is not int or not 1 <= before <= 9223372036854775807):
+        raise LedgerError("History before must be a positive signed 64-bit batch ID")
+    with closing(connect(root)) as db, db:
+        # Keep batch selection and entry retrieval in one SQLite read snapshot.
+        db.execute("BEGIN")
+        batches = db.execute("""SELECT id,accepted_at,review_token,scope_note FROM acceptance_batches
+            WHERE (? IS NULL OR id < ?) AND (? IS NULL OR EXISTS
+                (SELECT 1 FROM acceptance_entries WHERE batch_id=acceptance_batches.id AND note=?))
+            ORDER BY id DESC LIMIT ?""", (before, before, note, note, limit + 1)).fetchall()
+        more = len(batches) > limit
+        results = []
+        for batch_id, timestamp, token, scope in batches[:limit]:
+            rows = db.execute("""SELECT key,revision,before_content,content,note_hash FROM acceptance_entries
+                WHERE batch_id=? AND (? IS NULL OR note=?) ORDER BY key""", (batch_id, note, note)).fetchall()
+            dependencies = []
+            for key, revision, previous, content, note_hash in rows:
+                dependencies.append({**json.loads(key), "revision": revision, "before": previous,
+                                     "accepted": content, "source_hash": digest(content), "note_hash": note_hash})
+            results.append({"id": batch_id, "accepted_at": timestamp, "review_token": token,
+                            "scope_note": scope, "dependencies": dependencies})
+        return {"version": 1, "batches": results, "next_before": results[-1]["id"] if more else None}
