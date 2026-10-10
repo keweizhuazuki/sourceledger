@@ -5,6 +5,8 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from sourceledger.core import LedgerError, accept, check, connect, dependency_key, digest, history
 from sourceledger.cli import main, render_history
@@ -25,6 +27,39 @@ class HistoryTests(unittest.TestCase):
 
     def accept(self, note=None):
         accept(self.root, check(self.root, note)['review_token'], note)
+
+    def test_concurrent_acceptance_consumes_token_only_once(self):
+        token = check(self.root)['review_token']
+        def try_accept():
+            try:
+                accept(self.root, token)
+                return 'accepted'
+            except LedgerError:
+                return 'stale'
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(lambda _: try_accept(), range(2)))
+        self.assertEqual(sorted(outcomes), ['accepted', 'stale'])
+        self.assertEqual(len(history(self.root)['batches']), 1)
+
+    def test_failed_migration_rolls_back_schema_and_preserves_legacy_data(self):
+        directory = self.root / '.sourceledger'
+        directory.mkdir()
+        path = directory / 'state.sqlite3'
+        with contextlib.closing(sqlite3.connect(path)) as db, db:
+            db.execute('CREATE TABLE baselines (key TEXT PRIMARY KEY, content TEXT NOT NULL, note_hash TEXT NOT NULL, revision INTEGER NOT NULL)')
+            db.execute('INSERT INTO baselines VALUES (?,?,?,?)', (dependency_key(self.dep), 'saved source', 'saved note hash', 7))
+        original = sqlite3.connect
+        def guarded_connect(*args, **kwargs):
+            db = original(*args, **kwargs)
+            db.set_authorizer(lambda action, name, *_: sqlite3.SQLITE_DENY if action == sqlite3.SQLITE_CREATE_TABLE and name == 'acceptance_entries' else sqlite3.SQLITE_OK)
+            return db
+        with patch('sourceledger.core.sqlite3.connect', side_effect=guarded_connect):
+            with self.assertRaises(sqlite3.DatabaseError):
+                connect(self.root)
+        with contextlib.closing(original(path)) as db:
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 0)
+            self.assertEqual(db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall(), [('baselines',)])
+            self.assertEqual(db.execute('SELECT content,note_hash,revision FROM baselines').fetchone(), ('saved source', 'saved note hash', 7))
 
     def test_success_records_timestamp_scope_revision_and_exact_snapshot(self):
         self.accept('note.md')

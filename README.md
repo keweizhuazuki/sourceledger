@@ -129,7 +129,7 @@ Verified on 2026-10-11 (Asia/Shanghai): [CI run 38066938074](https://github.com/
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; 35 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; 37 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 See the [completed changes](CHANGELOG.md).
 
