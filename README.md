@@ -148,6 +148,27 @@ Old databases migrate automatically without changing existing baselines or their
 
 The [runnable demo output](docs/demo-output.txt) includes a real initial acceptance record; its timestamp and token are examples, not values to reuse.
 
+## Portable baselines for offline CI
+
+After a normal human review and `accept`, export the accepted state:
+
+```sh
+sourceledger --root ./handbook export-baseline --output reviewed-baseline.json
+sourceledger --root ./fresh-checkout check --baseline reviewed-baseline.json
+sourceledger --root ./fresh-checkout check --baseline reviewed-baseline.json --format html --output ci-review.html
+python examples/baseline_demo.py
+```
+
+Windows without activation: use `.venv\Scripts\sourceledger.exe` and `.venv\Scripts\python.exe` from the checkout. Snapshot/report paths are relative to the current working directory; note/source paths remain relative to `--root`.
+
+Export includes only previously accepted source text and note hashes for the current manifest. Every tracked dependency must have an accepted baseline; unaccepted edits are never promoted into the export. Missing current notes/sources do not prevent exporting their already accepted records. Existing output files are refused. Export reads the existing database without creating or migrating it. It supports SourceLedger’s default rollback-journal database; externally converted WAL-mode databases are explicitly rejected to avoid creating sidecar files or exporting stale data. It never checkpoints or changes journal mode. Stop external database maintenance during export.
+
+`check --baseline` reads the snapshot and current local files without opening or creating SQLite storage. It supports `--note`, text/JSON/HTML and normal exit codes: 0 current, 1 new/changed dependencies, 2 invalid input or missing files/sections. New manifest dependencies require review; snapshot dependencies removed from the manifest are listed separately and do not alone change the exit code. Note edits remain a human-review warning, as with ordinary checks. Snapshot reports have no acceptance token; run an ordinary local `check` before `accept`.
+
+The strict version-1 JSON format includes dependency identities, accepted source text, SHA-256 content hashes and accepted note hashes. Limits: 8 MiB snapshot, 2 MiB accepted text per entry, 10,000 entries. Unknown versions/fields, duplicate JSON fields/dependencies, invalid paths/types/hashes and malformed UTF-8 are rejected. Content hashes establish internal consistency, **not provenance or authenticity**. CI must obtain a trusted reviewed snapshot independently of the change under test; accepting a modified baseline from that same change can conceal source changes. This tool does not enforce branch policy.
+
+Snapshots contain source excerpts and file paths. Keep sensitive snapshots private; do not automatically commit or publish them. The [actual synthetic demo output](docs/baseline-example.txt) and [HTML report](docs/baseline-report.html) contain no user data. Import, historical acceptance transfer and baseline merging are deferred; no acceptance history is fabricated.
+
 ## Data and safety boundaries
 
 - Accepted source text is stored locally in `.sourceledger/state.sqlite3`. Treat it as sensitive if your sources are sensitive; keep it out of public Git history. Back it up to preserve reviews.
@@ -172,10 +193,10 @@ Verified on 2026-10-11 (Asia/Shanghai): [CI run 38076246528](https://github.com/
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; read-only exact staged Git replacement suggestions; 88 regression tests; controlled invalid-root errors; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; read-only exact staged Git replacement suggestions; portable accepted-baseline export and database-free CI snapshot checks; 105 regression tests; controlled invalid-root errors; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 See the [completed changes](CHANGELOG.md).
 
-Next: deterministic anchor mapping for more Markdown dialects; CI baseline import/export. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
+Next: explicit reviewed import into an empty ledger with accurate import provenance; deterministic anchor mapping for more Markdown dialects. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
 
 No license has been selected or granted by this repository.

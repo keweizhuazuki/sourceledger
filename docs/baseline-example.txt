@@ -1,0 +1,21 @@
+SourceLedger | local source review
+0 new, 1 changed, 1 current, 0 error
+
+[CHANGED] onboarding.md ← policy.md → Access [1]
+--- accepted
++++ current
+@@ -1,4 +1,4 @@
+ ## Access
+ 
+-Temporary access lasts 30 days. A manager must approve it.
++Temporary access lasts 14 days. A manager must approve it.
+ 
+
+
+[CURRENT] onboarding.md ← support.md
+
+Snapshot SHA-256: 98ebbc6ec4ef4b549d6086b99706c4869d6365034300ed02454b387980d4d0c9
+Snapshot comparison only; no local acceptance token.
+Run a normal check before local acceptance.
+
+Verified: fresh CI copy, accepted snapshot, changed source; no local database or acceptance token.
