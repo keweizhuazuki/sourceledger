@@ -10,6 +10,7 @@ from pathlib import Path
 from .core import LedgerError, accept, check, read_text, sections, history
 from .discovery import discover
 from .renames import suggest_renames
+from .snapshots import export_baseline, check_baseline
 
 
 def diff(row):
@@ -28,7 +29,13 @@ def render_text(report):
             lines.append(row["error"])
         elif row["status"] != "current":
             lines.append(diff(row))
-    lines.extend(["", "Review token: " + report["review_token"], "Checking does not accept changes. Use accept --token TOKEN only after reviewing."])
+    if report.get("baseline_mode") == "snapshot":
+        lines.extend(["", "Snapshot SHA-256: " + report["snapshot_digest"], "Snapshot comparison only; no local acceptance token.",
+                      "Run a normal check before local acceptance."])
+        for dep in report["removed_dependencies"]:
+            lines.append("No longer tracked: " + json.dumps(dep, ensure_ascii=False))
+    else:
+        lines.extend(["", "Review token: " + report["review_token"], "Checking does not accept changes. Use accept --token TOKEN only after reviewing."])
     return "\n".join(lines) + "\n"
 
 
@@ -41,7 +48,12 @@ def render_html(report):
             detail = "Note edited since acceptance; content accuracy still needs human review.\n\n" + detail
         cards.append(f'<article><span class="status {esc(row["status"])}">{esc(row["status"])}</span><h2>{esc(row["note"])}</h2><p>{esc(row["source"])} · {esc(row.get("heading", "whole file"))} · occurrence {row.get("occurrence", 1)}</p><pre>{esc(detail)}</pre></article>')
     summary = " · ".join(f"{count} {status}" for status, count in report["summary"].items())
-    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>SourceLedger review</title><style>body{{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f2f5f8;color:#192e40}}header,article{{background:white;padding:24px;border-radius:12px;margin:16px 0;border:1px solid #d8e1ea}}h1{{font-size:36px;margin:8px 0}}h2{{font-size:20px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fa;padding:16px;border-radius:8px}}.status{{text-transform:uppercase;font-size:12px;font-weight:700;padding:5px 9px;border-radius:20px;background:#dfe8f1}}.changed,.new{{background:#ffedb3}}.error{{background:#ffcfcd}}.current{{background:#cbeedd}}code{{overflow-wrap:anywhere}}</style><header><small>LOCAL KNOWLEDGE · HUMAN REVIEW</small><h1>SourceLedger</h1><p>{esc(summary)}</p><p>Source changes identify notes to review. They do not prove a note is wrong or correct.</p></header>{''.join(cards)}<footer><p>Review token: <code>{report['review_token']}</code></p><p>This static report never accepts changes or loads external resources. Run the CLI accept command after review.</p></footer></html>'''
+    if report.get("baseline_mode") == "snapshot":
+        footer = '<p>Snapshot SHA-256: <code>' + esc(report['snapshot_digest']) + '</code></p><p>Snapshot comparison only; no local acceptance token. Run a normal check before local acceptance.</p>'
+        footer += ''.join('<p>No longer tracked: ' + esc(json.dumps(dep, ensure_ascii=False)) + '</p>' for dep in report['removed_dependencies'])
+    else:
+        footer = f'<p>Review token: <code>{report["review_token"]}</code></p><p>This static report never accepts changes or loads external resources. Run the CLI accept command after review.</p>'
+    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>SourceLedger review</title><style>body{{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f2f5f8;color:#192e40}}header,article{{background:white;padding:24px;border-radius:12px;margin:16px 0;border:1px solid #d8e1ea}}h1{{font-size:36px;margin:8px 0}}h2{{font-size:20px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fa;padding:16px;border-radius:8px}}.status{{text-transform:uppercase;font-size:12px;font-weight:700;padding:5px 9px;border-radius:20px;background:#dfe8f1}}.changed,.new{{background:#ffedb3}}.error{{background:#ffcfcd}}.current{{background:#cbeedd}}code{{overflow-wrap:anywhere}}</style><header><small>LOCAL KNOWLEDGE · HUMAN REVIEW</small><h1>SourceLedger</h1><p>{esc(summary)}</p><p>Source changes identify notes to review. They do not prove a note is wrong or correct.</p></header>{''.join(cards)}<footer>{footer}</footer></html>'''
 
 
 def render_renames(report):
@@ -100,8 +112,11 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
     show = sub.add_parser("check", help="inspect without changing accepted baselines; exit 1 if review needed")
     show.add_argument("--note", help="review one exact note path")
+    show.add_argument("--baseline", type=Path, help="compare against an offline snapshot without opening local database storage")
     show.add_argument("--format", choices=["text", "json", "html"], default="text")
     show.add_argument("--output", type=Path, help="write report to a NEW file; existing files are never overwritten")
+    export = sub.add_parser("export-baseline", help="export accepted baselines for the current manifest; never accept current edits")
+    export.add_argument("--output", required=True, type=Path, help="write a NEW baseline snapshot file")
     approve = sub.add_parser("accept", help="explicitly accept the exact inspected snapshot")
     approve.add_argument("--token", required=True)
     approve.add_argument("--note")
@@ -135,6 +150,12 @@ def main(argv=None):
                 handle.write("\n")
             print("Created sourceledger.json. Edit the paths before running check.")
             return 0
+        if args.command == "export-baseline":
+            snapshot = export_baseline(root)
+            with args.output.open("x", encoding="utf-8", newline="\n") as handle:
+                handle.write(json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
+            print(f"Accepted baseline snapshot written to {args.output}. Review its source excerpts before sharing.")
+            return 0
         if args.command == "headings":
             print(json.dumps(sections(read_text(root, args.source)), ensure_ascii=False, indent=2))
             return 0
@@ -162,7 +183,7 @@ def main(argv=None):
             count = accept(root, args.token, args.note)
             print(f"Accepted {count} dependencies. Notes and sources were not edited.")
             return 0
-        report = check(root, args.note)
+        report = check_baseline(root, args.baseline, args.note) if args.baseline else check(root, args.note)
         output = json.dumps(report, ensure_ascii=False, indent=2) + "\n" if args.format == "json" else render_html(report) if args.format == "html" else render_text(report)
         if args.output:
             with args.output.open("x", encoding="utf-8") as handle:

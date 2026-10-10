@@ -146,6 +146,27 @@ sourceledger --root ./handbook history --format json
 
 [实际示例输出](docs/demo-output.txt) 包含首次确认记录；其中的时间与令牌仅作展示，不应直接复用。
 
+## 用于离线 CI 的便携基线
+
+完成正常人工复核和 `accept` 后，导出已确认状态：
+
+```sh
+sourceledger --root ./handbook export-baseline --output reviewed-baseline.json
+sourceledger --root ./fresh-checkout check --baseline reviewed-baseline.json
+sourceledger --root ./fresh-checkout check --baseline reviewed-baseline.json --format html --output ci-review.html
+python examples/baseline_demo.py
+```
+
+Windows 未激活虚拟环境时，在源码目录中使用 `.venv\Scripts\sourceledger.exe` 和 `.venv\Scripts\python.exe`。快照与报告路径相对于当前工作目录；笔记和来源路径仍相对于 `--root`。
+
+导出仅包含当前清单中已确认的来源文本和笔记哈希。每个跟踪依赖都必须已有基线；未确认的编辑不会被自动写入快照。当前笔记或来源缺失不影响导出其已确认记录。拒绝覆盖已有输出文件，只读访问现有数据库，不创建或迁移数据库。支持 SourceLedger 默认的回滚日志数据库；对于被外部转换为 WAL 模式的数据库会明确拒绝，以免创建旁文件或导出过时数据。不会执行检查点操作或切换日志模式；导出时请停止外部数据库维护。
+
+`check --baseline` 读取快照及当前本地文件，不打开或创建 SQLite。支持 `--note`、文本/JSON/HTML 和原有退出码：0 表示当前一致，1 表示新增或变化依赖，2 表示无效输入或缺失文件/章节。清单新增依赖需要复核；快照中已从清单移除的依赖单独列出，本身不改变退出码。笔记编辑仍像普通检查一样提示人工复核。快照报告不提供确认令牌；执行 `accept` 前需重新运行普通本地 `check`。
+
+严格的版本 1 JSON 包含依赖标识、已确认来源文本、SHA-256 内容哈希及已确认笔记哈希。限制为快照 8 MiB、单条已确认文本 2 MiB、10,000 条依赖。拒绝未知版本/字段、重复 JSON 字段/依赖、无效路径/类型/哈希及错误 UTF-8。内容哈希仅验证内部一致性，**不证明来源可信或真实性**。CI 必须独立于被检查的改动取得可信且已复核的快照；若同时接受该改动替换的基线，可能掩盖来源变化。工具不负责执行分支策略。
+
+快照包含来源摘录和文件路径。敏感快照应保持私密，不要自动提交或发布。[真实合成示例输出](docs/baseline-example.txt) 与 [HTML 报告](docs/baseline-report.html) 不含用户数据。导入、历史确认迁移和基线合并留待后续，不虚构确认历史。
+
 ## 数据与安全边界
 
 - 已确认的来源原文保存在 `.sourceledger/state.sqlite3`。来源敏感时，数据库也敏感；不要提交到公开仓库，并自行备份以保留复核记录。
@@ -164,14 +185,14 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38076246528](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076246528) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 88 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
+验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38076905944](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076905944) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 105 项测试、安装、编译检查和实际示例（包括便携基线场景）。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
 
 ## 已完成与下一步
 
-已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、只读且需复核的链接发现与路径/片段诊断、只读精确暂存 Git 替代路径建议、88 项回归测试、受控的无效根目录错误、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
+已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、只读且需复核的链接发现与路径/片段诊断、只读精确暂存 Git 替代路径建议、已确认基线导出与无需数据库的 CI 快照检查、105 项回归测试、受控的无效根目录错误、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
 
 已完成批次见[变更记录](CHANGELOG.md)。
 
-下一步：更多 Markdown 锚点规则、CI 基线导入导出。不承诺日期。反馈请说明反复遇到的实际任务，并提供不含敏感信息的最小示例。
+下一步：需明确复核的空数据库基线导入及准确的导入来源记录；更多 Markdown 锚点规则。不承诺日期。反馈请说明反复遇到的实际任务，并提供不含敏感信息的最小示例。
 
 本仓库尚未选择或授予许可证。

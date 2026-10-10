@@ -25,6 +25,14 @@ const assert = require('node:assert/strict');
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile horizontal overflow');
     await page.screenshot({ path: 'screenshots/report-mobile.png', fullPage: true });
+    await page.goto(pathToFileURL(resolve('docs/baseline-report.html')).href);
+    assert.equal(await page.locator('article').count(), 2);
+    assert.match(await page.locator('footer').innerText(), /no local acceptance token/);
+    assert.doesNotMatch(await page.locator('footer').innerText(), /Review token:/);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Snapshot mobile overflow');
+    assert.equal(await page.locator('script').count(), 0);
+    assert.ok(requests.every(url => url.startsWith('file:')), 'Snapshot report made a network request');
+    assert.deepEqual(errors, []);
     console.log('Verified actual HTML report: desktop/mobile layout, source diffs, no scripts or external requests.');
   } finally {
     await browser.close();

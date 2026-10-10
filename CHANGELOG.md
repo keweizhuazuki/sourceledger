@@ -1,5 +1,15 @@
 # Completed changes / 已完成变更
 
+## Portable accepted baselines / 便携已确认基线 — 2026-10-11 Asia/Shanghai
+
+- Added deterministic `export-baseline` for complete accepted manifest coverage, with exclusive new-file output and no promotion of unaccepted edits.
+- Added `check --baseline` for offline CI: no SQLite access, no acceptance token, existing report formats/exit codes, explicit new and removed dependency reporting.
+- Strict versioned JSON, duplicate/type/hash/path validation, size limits, legacy read-only export, and explicit WAL rejection prevent ambiguous or silently mutated snapshots.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076905944): six OS/Python jobs and Chromium passed. Added synthetic CLI/HTML examples, browser checks, and 17 snapshot tests (105 total); synchronized English/Chinese safety and CI-trust documentation.
+- Import and provenance migration remain deferred. Exported content hashes are not proof of authenticity.
+
+新增已确认基线导出和离线 CI 快照检查；不自动确认编辑，不访问检查端数据库，不生成确认令牌。提供严格格式校验、大小限制、WAL 模式拒绝、真实合成示例及测试。导入和来源记录迁移留待后续，哈希不代表可信来源。
+
 ## CLI root errors and installation / CLI 根目录错误与安装 — 2026-10-11 Asia/Shanghai
 
 - Reproduced `--root` symlink loops raising a traceback with exit 1; invalid roots now return the documented operation-error exit 2 without opening baseline storage.
@@ -50,6 +60,6 @@
 
 ## Next / 下一步
 
-More Markdown anchor dialects; CI baseline import/export. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
+Explicit reviewed import into an empty ledger with accurate provenance; more Markdown anchor dialects. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
 
-下一步考虑更多锚点规则、CI 基线导入导出。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。
+下一步考虑需明确复核的空数据库导入及准确来源记录、更多锚点规则。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。
