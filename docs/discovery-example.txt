@@ -1,0 +1,19 @@
+SourceLedger | review-only link discovery
+2 candidates, 3 skipped/warnings
+
+Candidate from line(s) 3, 5:
+{"note": "discovery/note.md", "source": "handbook/policy.md", "heading": "Access", "occurrence": 1}
+
+Candidate from line(s) 4:
+{"note": "discovery/note.md", "source": "handbook/support.md"}
+
+Skipped discovery/note.md:8 https://example.com/policy
+  External URL or URI scheme skipped; discovery never fetches network sources
+
+Skipped discovery/note.md:9 ../handbook/policy.md#nonexistent
+  Unresolved fragment #nonexistent; no supported plain-ATX anchor matches
+
+Skipped discovery/note.md:10 #team-onboarding-notes
+  Same-document navigation skipped; it is not an external source dependency
+
+Review candidates, then copy selected dependency objects into sourceledger.json. This proposal is not a manifest. Run check and explicitly accept after reviewing source content.

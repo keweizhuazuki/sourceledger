@@ -88,6 +88,27 @@ Use the same `--note` selection for checking and acceptance. A token changes whe
 
 Exit codes: `0` all selected sources current / action succeeded; `1` new or changed sources require review; `2` invalid configuration, missing source/note/section, unreadable file, or operation error. A missing or renamed source is an error, never an accepted deletion. Correct the path deliberately and review the new dependency.
 
+## Discover candidates from existing Markdown links
+
+```sh
+sourceledger --root ./handbook discover notes/onboarding.md
+sourceledger --root ./handbook discover notes/onboarding.md notes/support.md --format json --output proposal.json
+python -m sourceledger --root examples discover discovery/note.md
+```
+
+Discovery reads only the named notes and linked local UTF-8 files. It does not create/open the baseline database, modify your manifest, accept sources, or fetch URLs. It produces deduplicated candidates with manifest-ready `dependency` objects, original line numbers/destinations, and source/note hashes; skipped destinations include reasons. See the [actual mixed-case example](docs/discovery-example.txt).
+
+Review the report and copy only the chosen `dependency` objects into the `dependencies` array in `sourceledger.json` (or run `init` first). Then run `check`, review the actual source snapshots, and explicitly `accept` a fresh token. A discovery proposal has a separate `kind` and is deliberately rejected as a manifest. The command refuses to write `sourceledger.json` or overwrite any existing proposal file. There is no automatic apply step; discovered links may be navigation or otherwise irrelevant to the note's claims.
+
+Supported discovery subset:
+
+- Ordinary single-line inline links, such as `[policy](../sources/policy.md#access)`, angle-bracket destinations with spaces, percent-encoded UTF-8 paths/fragments, balanced/escaped destination parentheses, and optional single/double-quoted titles.
+- Paths resolve relative to the note, stay within the selected root, and point to readable UTF-8 files. Identical dependencies are grouped while retaining every source line.
+- Fragment matching uses a conservative plain-heading profile: all ATX titles in the target must contain only Unicode word characters, ASCII spaces, hyphens or underscores. Lowercase titles replace each space with a hyphen; collisions append `-1`, `-2`, etc. in document order, skipping used slugs. This is not a promise of GitHub/Obsidian/other renderer equivalence. HTML/comment markup, container/Setext heading syntax, non-plain headings or unknown fragments require manual `headings` inspection and explicit configuration.
+- Fenced/indented code, inline-code spans and HTML comments are ignored. Raw/inline HTML, reference/wiki-link lines, multiline links/titles, images, query strings, external schemes, and same-document navigation are skipped or reported as unsupported. This is a bounded parser, not complete CommonMark; complex/nested link labels and unmatched delimiters require manual inspection. It may conservatively skip an entire unsupported line/block.
+
+Discovery exits `0` when a report is produced, even with skipped links, or `2` for an invalid requested note/output operation. Candidates are suggestions, never proof of completeness or factual dependency. Source changes after discovery are evaluated by the ordinary `check`/`accept` flow.
+
 ## Inspect acceptance history
 
 ```sh
@@ -109,7 +130,7 @@ The [runnable demo output](docs/demo-output.txt) includes a real initial accepta
 
 - Accepted source text is stored locally in `.sourceledger/state.sqlite3`. Treat it as sensitive if your sources are sensitive; keep it out of public Git history. Back it up to preserve reviews.
 - `check` creates/opens local database storage but never updates accepted baselines. Acceptance is one SQLite transaction; any dependency error prevents the whole selected batch from being accepted.
-- Reads are limited to 2 MiB per UTF-8 file. Absolute paths, paths outside the root, and resolved symlink escapes are rejected. Do not run on an untrusted directory being concurrently manipulated; this is a local tool, not a filesystem sandbox.
+- Reads require regular files and are limited to 2 MiB per UTF-8 file; pipes/devices and symlink loops are rejected. Absolute paths, paths outside the root, and resolved symlink escapes are rejected. Do not run on an untrusted directory being concurrently manipulated; this is a local tool, not a filesystem sandbox.
 - Source content is captured at check/accept time; there is no filesystem-wide atomic snapshot. Stop concurrent editors while accepting. SQLite serializes competing acceptance writes.
 - Reports can contain full source excerpts, so review them before sharing. HTML is escaped, has no scripts, and loads no remote resources.
 - No network source fetching, cron daemon, notifications, cloud syncing, telemetry, or factual validation. Markdown notes are never automatically modified. Removed manifest entries are no longer checked; their prior accepted text remains in the database.
@@ -125,14 +146,14 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-Verified on 2026-10-11 (Asia/Shanghai): [CI run 38067579257](https://github.com/keweizhuazuki/sourceledger/actions/runs/38067579257) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 37 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation. These checks do not establish support for every filesystem or Markdown dialect.
+Verified on 2026-10-11 (Asia/Shanghai): [CI run 38067579257](https://github.com/keweizhuazuki/sourceledger/actions/runs/38067579257) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 37 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation; named-pipe tests skip where that OS facility is unavailable. These checks do not establish support for every filesystem or Markdown dialect.
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; 37 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; 62 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 See the [completed changes](CHANGELOG.md).
 
-Next: local Markdown-link discovery with review before tracking; deterministic anchor mapping for more Markdown dialects; CI baseline import/export; optional Git rename suggestions. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
+Next: deterministic anchor mapping for more Markdown dialects; CI baseline import/export; optional Git rename suggestions. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
 
 No license has been selected or granted by this repository.

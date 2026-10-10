@@ -1,3 +1,14 @@
+SourceLedger | review-only link discovery
+2 candidates, 0 skipped/warnings
+
+Candidate from line(s) 5:
+{"note": "onboarding.md", "source": "policy.md", "heading": "Access", "occurrence": 1}
+
+Candidate from line(s) 5:
+{"note": "onboarding.md", "source": "support.md"}
+
+Review candidates, then copy selected dependency objects into sourceledger.json. This proposal is not a manifest. Run check and explicitly accept after reviewing source content.
+
 SourceLedger | local source review
 0 new, 1 changed, 1 current, 0 error
 
@@ -19,7 +30,7 @@ Checking does not accept changes. Use accept --token TOKEN only after reviewing.
 
 SourceLedger | acceptance history (newest first)
 
-#1 2026-10-10T16:23:54.767036+00:00 | scope: all tracked notes
+#1 2026-10-10T16:32:55.956722+00:00 | scope: all tracked notes
   onboarding.md <- policy.md / 'Access' [1]
     revision 1 | source SHA-256 279ecd763f3646b3b660dcd955aa349d226c64b91cdebe3b8ee5904506f8d7ac
   onboarding.md <- support.md / whole file

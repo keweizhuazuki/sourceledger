@@ -8,6 +8,7 @@ import sys
 import sqlite3
 from pathlib import Path
 from .core import LedgerError, accept, check, read_text, sections, history
+from .discovery import discover
 
 
 def diff(row):
@@ -40,6 +41,18 @@ def render_html(report):
         cards.append(f'<article><span class="status {esc(row["status"])}">{esc(row["status"])}</span><h2>{esc(row["note"])}</h2><p>{esc(row["source"])} · {esc(row.get("heading", "whole file"))} · occurrence {row.get("occurrence", 1)}</p><pre>{esc(detail)}</pre></article>')
     summary = " · ".join(f"{count} {status}" for status, count in report["summary"].items())
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>SourceLedger review</title><style>body{{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f2f5f8;color:#192e40}}header,article{{background:white;padding:24px;border-radius:12px;margin:16px 0;border:1px solid #d8e1ea}}h1{{font-size:36px;margin:8px 0}}h2{{font-size:20px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fa;padding:16px;border-radius:8px}}.status{{text-transform:uppercase;font-size:12px;font-weight:700;padding:5px 9px;border-radius:20px;background:#dfe8f1}}.changed,.new{{background:#ffedb3}}.error{{background:#ffcfcd}}.current{{background:#cbeedd}}code{{overflow-wrap:anywhere}}</style><header><small>LOCAL KNOWLEDGE · HUMAN REVIEW</small><h1>SourceLedger</h1><p>{esc(summary)}</p><p>Source changes identify notes to review. They do not prove a note is wrong or correct.</p></header>{''.join(cards)}<footer><p>Review token: <code>{report['review_token']}</code></p><p>This static report never accepts changes or loads external resources. Run the CLI accept command after review.</p></footer></html>'''
+
+
+def render_discovery(report):
+    lines = ["SourceLedger | review-only link discovery", f"{len(report['candidates'])} candidates, {len(report['skipped'])} skipped/warnings"]
+    for candidate in report['candidates']:
+        locations = ', '.join(str(link['line']) for link in candidate['links'])
+        lines.append(f"\nCandidate from line(s) {locations}:")
+        lines.append(json.dumps(candidate['dependency'], ensure_ascii=False))
+    for item in report['skipped']:
+        lines.append(f"\nSkipped {item['note']}:{item['line']} {item['destination'] or ''}\n  {item['reason']}")
+    lines.extend(["", report['instructions']])
+    return "\n".join(lines) + "\n"
 
 
 def render_history(report):
@@ -76,6 +89,10 @@ def main(argv=None):
     approve = sub.add_parser("accept", help="explicitly accept the exact inspected snapshot")
     approve.add_argument("--token", required=True)
     approve.add_argument("--note")
+    discovery = sub.add_parser("discover", help="propose local inline-link dependencies without changing tracking or baselines")
+    discovery.add_argument("notes", nargs='+', help="Markdown note paths relative to root")
+    discovery.add_argument("--format", choices=["text", "json"], default="text")
+    discovery.add_argument("--output", type=Path, help="write a NEW proposal file, never the active manifest")
     past = sub.add_parser("history", help="inspect prior explicit acceptances, including removed dependencies")
     past.add_argument("--note", help="filter entries by exact note path")
     past.add_argument("--limit", type=int, default=20, help="number of batches, 1-100 (default: 20)")
@@ -97,6 +114,18 @@ def main(argv=None):
             return 0
         if args.command == "headings":
             print(json.dumps(sections(read_text(root, args.source)), ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "discover":
+            report = discover(root, args.notes)
+            output = json.dumps(report, ensure_ascii=False, indent=2) + "\n" if args.format == "json" else render_discovery(report)
+            if args.output:
+                if args.output.resolve() == (root / "sourceledger.json").resolve():
+                    raise LedgerError("Discovery cannot write the active manifest. Save a separate proposal, review it, then copy selected dependencies")
+                with args.output.open("x", encoding="utf-8") as handle:
+                    handle.write(output)
+                print(f"Review-only proposal written to {args.output}")
+            else:
+                sys.stdout.write(output)
             return 0
         if args.command == "history":
             report = history(root, args.note, args.limit, args.before)
