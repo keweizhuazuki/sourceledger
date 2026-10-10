@@ -6,6 +6,7 @@
 - Exact staged deletion/addition blob matches only; duplicate blobs remain explicitly ambiguous, and unsupported/edited/untracked/committed moves remain unresolved.
 - Added process-local Git safety controls, metadata parsing, no-state-change and hook-suppression tests, plus a real disposable Git demo.
 - No manifest rewrite, baseline/history migration, Git mutation or network operation.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38069408862): 86 tests across six OS/Python combinations, both real demos and Chromium checks. Windows path normalization differences are covered.
 
 重现 Git 移动后旧来源缺失的问题，新增精确暂存 blob 候选报告；明确保留歧义与不支持情况。加入只读/安全边界测试及真实临时示例，不修改清单、基线、历史或 Git，不联网。
 
