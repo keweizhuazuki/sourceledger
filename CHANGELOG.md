@@ -5,7 +5,7 @@
 - Added deterministic `export-baseline` for complete accepted manifest coverage, with exclusive new-file output and no promotion of unaccepted edits.
 - Added `check --baseline` for offline CI: no SQLite access, no acceptance token, existing report formats/exit codes, explicit new and removed dependency reporting.
 - Strict versioned JSON, duplicate/type/hash/path validation, size limits, legacy read-only export, and explicit WAL rejection prevent ambiguous or silently mutated snapshots.
-- Added synthetic CLI/HTML examples, browser checks, and 17 snapshot tests (105 total); synchronized English/Chinese safety and CI-trust documentation.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076905944): six OS/Python jobs and Chromium passed. Added synthetic CLI/HTML examples, browser checks, and 17 snapshot tests (105 total); synchronized English/Chinese safety and CI-trust documentation.
 - Import and provenance migration remain deferred. Exported content hashes are not proof of authenticity.
 
 新增已确认基线导出和离线 CI 快照检查；不自动确认编辑，不访问检查端数据库，不生成确认令牌。提供严格格式校验、大小限制、WAL 模式拒绝、真实合成示例及测试。导入和来源记录迁移留待后续，哈希不代表可信来源。
