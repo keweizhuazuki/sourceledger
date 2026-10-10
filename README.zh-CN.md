@@ -52,6 +52,8 @@ py -3 -m venv .venv
 +Temporary access lasts 14 days. A manager must approve it.
 ```
 
+Windows 未激活虚拟环境时，在源码目录中将后续命令的 `sourceledger` 替换为 `.venv\Scripts\sourceledger.exe`；从其他目录运行时请使用该程序的完整路径。也支持通过 `python -m pip install .`（Windows 未激活时用 `.venv\Scripts\python.exe -m pip install .`）普通安装（非可编辑安装），安装后的 CLI 可在源码目录外运行。Git 用于克隆及 `suggest-renames`，普通本地复核无需 Git。
+
 ## 接入已有知识库
 
 1. 运行 `sourceledger --root /path/to/notes init`。
@@ -83,6 +85,8 @@ sourceledger --root ./handbook check --format json --output review.json
 ```
 
 检查和确认使用相同的 `--note`。所选来源、笔记、依赖标识或已确认基线变化后，旧令牌失效。令牌用于防止确认过时报告，不是密码或签名。不会覆盖已有输出文件。命令行输出与保存的报告统一使用 UTF-8。
+
+无效的知识库根目录（目录不存在、普通文件、不可访问路径或符号链接循环）返回操作错误，不会误报为待复核。
 
 退出码：`0` 所选来源无变化或操作成功；`1` 新增或变化需要复核；`2` 配置错误、来源/笔记/章节缺失、读取失败或操作失败。来源被删除或重命名属于错误，不会自动确认删除；请明确修正路径并重新复核。
 
@@ -160,11 +164,11 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38069408862](https://github.com/keweizhuazuki/sourceledger/actions/runs/38069408862) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 86 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
+验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38076246528](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076246528) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 88 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
 
 ## 已完成与下一步
 
-已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、只读且需复核的链接发现与路径/片段诊断、只读精确暂存 Git 替代路径建议、86 项回归测试、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
+已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、只读且需复核的链接发现与路径/片段诊断、只读精确暂存 Git 替代路径建议、88 项回归测试、受控的无效根目录错误、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
 
 已完成批次见[变更记录](CHANGELOG.md)。
 

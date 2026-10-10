@@ -120,8 +120,13 @@ def main(argv=None):
     headings.add_argument("source")
     sub.add_parser("init", help="create an editable starter manifest without overwriting existing files")
     args = parser.parse_args(argv)
-    root = args.root.resolve()
     try:
+        try:
+            root = args.root.resolve()
+        except RuntimeError as exc:
+            # Python 3.10–3.12 raise RuntimeError for symlink loops; newer
+            # versions use OSError or leave the unresolved path to is_dir().
+            raise LedgerError(f"Cannot resolve knowledge-base folder: {args.root}: {exc}") from exc
         if not root.is_dir():
             raise LedgerError(f"Knowledge-base folder does not exist: {root}")
         if args.command == "init":
