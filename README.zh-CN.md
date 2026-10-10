@@ -86,6 +86,27 @@ sourceledger --root ./handbook check --format json --output review.json
 
 退出码：`0` 所选来源无变化或操作成功；`1` 新增或变化需要复核；`2` 配置错误、来源/笔记/章节缺失、读取失败或操作失败。来源被删除或重命名属于错误，不会自动确认删除；请明确修正路径并重新复核。
 
+## 从已有 Markdown 链接发现候选依赖
+
+```sh
+sourceledger --root ./handbook discover notes/onboarding.md
+sourceledger --root ./handbook discover notes/onboarding.md notes/support.md --format json --output proposal.json
+python -m sourceledger --root examples discover discovery/note.md
+```
+
+发现命令仅读取指定笔记及链接指向的本地 UTF-8 文件，不创建或打开基线数据库，不修改清单，不确认来源，也不请求网络。报告提供去重后的候选、可复制到清单的 `dependency` 对象、原始行号/链接以及来源和笔记哈希，并说明跳过原因。见[真实混合案例输出](docs/discovery-example.txt)。
+
+先复核报告，再把选中的 `dependency` 对象复制到 `sourceledger.json` 的 `dependencies` 数组（需要时先运行 `init`）。随后运行 `check`，检查实际来源快照，再用新令牌明确 `accept`。候选报告带独立的 `kind`，不能直接作为清单使用；命令拒绝写入 `sourceledger.json` 或覆盖已有报告。没有自动应用步骤，因为链接可能只是导航，不一定是笔记结论的依据。
+
+支持的有限语法：
+
+- 普通单行行内链接，例如 `[policy](../sources/policy.md#access)`；尖括号内带空格的路径；百分号编码的 UTF-8 路径/片段；目标中配对或转义的括号；可选的单引号/双引号标题。
+- 路径相对笔记解析，必须在所选根目录内并指向可读的 UTF-8 文件。相同依赖去重，但保留每个来源行号。
+- 片段采用保守的纯文本标题规则：目标的所有 ATX 标题仅含 Unicode 单词字符、ASCII 空格、连字符或下划线；转小写后每个空格替换为连字符，冲突按文档顺序追加 `-1`、`-2` 等并跳过已用标识。不保证与 GitHub、Obsidian 或其他渲染器完全等价。HTML/注释、列表/引用容器或 Setext 语法、非纯文本标题和未知片段需要用 `headings` 检查并手动配置。
+- 忽略围栏/缩进代码、行内代码及 HTML 注释。原始/行内 HTML、引用式或 Wiki 链接所在行、多行链接/标题、图片、查询字符串、外部协议和同页导航会被跳过或标为不支持。这不是完整 CommonMark 解析器；复杂嵌套标签和未闭合分隔符需人工检查，保守处理可能跳过整行或整块。
+
+成功生成报告退出 `0`，即使有跳过项；指定笔记无效或输出失败退出 `2`。候选不保证完整，也不证明事实依赖关系。发现后来源若变化，仍由正常的 `check`/`accept` 流程重新检查。
+
 ## 查看确认历史
 
 ```sh
@@ -107,7 +128,7 @@ sourceledger --root ./handbook history --format json
 
 - 已确认的来源原文保存在 `.sourceledger/state.sqlite3`。来源敏感时，数据库也敏感；不要提交到公开仓库，并自行备份以保留复核记录。
 - `check` 会创建或打开本地数据库，但不会修改已确认基线。确认使用 SQLite 单次事务；任何一个所选依赖出错，整批不确认。
-- 每个 UTF-8 文件最多 2 MiB。拒绝绝对路径、目录外路径和解析后越界的符号链接。不要在其他进程恶意修改的目录运行；这不是文件系统沙箱。
+- 只读取普通 UTF-8 文件，每个最多 2 MiB；拒绝管道、设备文件及符号链接环。拒绝绝对路径、目录外路径和解析后越界的符号链接。不要在其他进程恶意修改的目录运行；这不是文件系统沙箱。
 - 读取发生在检查或确认时，不提供整个文件系统的原子快照。确认期间请暂停并发编辑；SQLite 会串行处理并发确认。
 - 报告可能包含完整来源片段，分享前请检查。HTML 已转义，无脚本，不加载外部资源。
 - 不抓取网络来源，无定时后台服务、通知、云同步、遥测或事实核验，不自动修改笔记。移除清单中的依赖后不再检查，旧基线原文仍保留在数据库中。
@@ -121,14 +142,14 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38067579257](https://github.com/keweizhuazuki/sourceledger/actions/runs/38067579257) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 37 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试；这些验证不代表支持所有文件系统或 Markdown 方言。
+验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38068508378](https://github.com/keweizhuazuki/sourceledger/actions/runs/38068508378) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 65 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
 
 ## 已完成与下一步
 
-已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、37 项回归测试、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
+已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、只读且需复核的链接发现与路径/片段诊断、65 项回归测试、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
 
 已完成批次见[变更记录](CHANGELOG.md)。
 
-下一步：本地 Markdown 链接发现并人工选择追踪、更多 Markdown 锚点规则、CI 基线导入导出、可选的 Git 重命名建议。不承诺日期。反馈请说明反复遇到的实际任务，并提供不含敏感信息的最小示例。
+下一步：更多 Markdown 锚点规则、CI 基线导入导出、可选的 Git 重命名建议。不承诺日期。反馈请说明反复遇到的实际任务，并提供不含敏感信息的最小示例。
 
 本仓库尚未选择或授予许可证。

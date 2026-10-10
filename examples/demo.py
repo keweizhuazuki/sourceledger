@@ -4,13 +4,19 @@ from pathlib import Path
 import shutil
 import tempfile
 from sourceledger.core import accept, check, history
-from sourceledger.cli import render_text, render_html, render_history, configure_output
+from sourceledger.cli import render_text, render_html, render_history, render_discovery, configure_output
+
+from sourceledger.discovery import discover
 
 configure_output()
 
 with tempfile.TemporaryDirectory(prefix="sourceledger-demo-") as directory:
     root = Path(directory) / "handbook"
     shutil.copytree(Path(__file__).parent / "handbook", root, ignore=shutil.ignore_patterns(".sourceledger"))
+    manifest_before = (root / "sourceledger.json").read_bytes()
+    print(render_discovery(discover(root, ["onboarding.md"])))
+    assert not (root / ".sourceledger").exists(), "Discovery must not create baseline storage"
+    assert (root / "sourceledger.json").read_bytes() == manifest_before
     initial = check(root)
     accept(root, initial["review_token"])
     policy = root / "policy.md"

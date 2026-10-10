@@ -1,5 +1,16 @@
 # Completed changes / 已完成变更
 
+## Reviewed link discovery / 需复核的链接发现 — 2026-10-11 Asia/Shanghai
+
+- Added read-only `discover` for explicit Markdown notes: inline local links, relative/percent-encoded paths, conservative plain-ATX fragments, deduplication and line references.
+- Separate text/JSON proposals cannot silently become the active manifest. Users explicitly select and copy dependencies, then use the existing check/accept workflow.
+- No database access, baseline mutation or network requests. Unsupported syntax, escaped-root paths and unresolved sources/fragments are visible in the report.
+- Added a runnable mixed-case fixture, synchronized documentation, and regressions for the review boundary and parsing/path cases.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38068508378): 65 tests across six OS/Python combinations plus Chromium checks; OS-specific tests skip where the relevant facility is unavailable.
+- Hardened reads against pipes/devices and symlink loops; preserved symlinked notes’ logical relative-link base and literal filename entities; conservatively skipped unsupported markup.
+
+新增只读候选发现、路径/片段解析、去重与行号；候选报告不能直接作为清单使用，需人工选择后走原有复核确认流程。不访问数据库或网络，并提供跳过原因、真实示例和回归测试。
+
 ## Acceptance history / 确认历史 — 2026-10-11 Asia/Shanghai
 
 - Added `history` with exact-note filtering, bounded stable pagination, text and JSON output.
@@ -21,6 +32,6 @@
 
 ## Next / 下一步
 
-Local Markdown-link discovery with review before tracking; more Markdown anchor dialects; CI baseline import/export; optional Git rename suggestions. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
+More Markdown anchor dialects; CI baseline import/export; optional Git rename suggestions. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
 
-优先推进本地链接发现与人工选择追踪，再考虑更多锚点规则、CI 基线导入导出及 Git 重命名建议。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。
+下一步考虑更多锚点规则、CI 基线导入导出及 Git 重命名建议。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。

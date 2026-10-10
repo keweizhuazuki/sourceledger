@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import sqlite3
+import stat
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,7 +30,10 @@ def safe_path(root, name):
     candidate = Path(name)
     if candidate.is_absolute() or re.match(r"^[A-Za-z]:", name):
         raise LedgerError(f"Absolute paths are not allowed: {name}")
-    path = (root / candidate).resolve()
+    try:
+        path = (root / candidate).resolve()
+    except (RuntimeError, OSError, ValueError) as exc:
+        raise LedgerError(f"Cannot resolve local path {name}: {exc}") from exc
     if not path.is_relative_to(root.resolve()):
         raise LedgerError(f"Path escapes the knowledge base: {name}")
     return path
@@ -38,6 +42,8 @@ def safe_path(root, name):
 def read_text(root, name):
     path = safe_path(root, name)
     try:
+        if not stat.S_ISREG(path.stat().st_mode):
+            raise LedgerError(f"Not a regular UTF-8 file: {name}")
         with path.open("rb") as stream:
             raw = stream.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
