@@ -108,11 +108,11 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-The initial local suite runs on Linux. The repository CI matrix is configured for Linux, macOS, and Windows with Python 3.10 and 3.13; a configured workflow is not itself evidence of a successful run. Symlink tests skip if the OS does not permit creating them. The HTML report is generated from real demo data; browser layout validation is separate from unit tests.
+Verified on 2026-10-11 (Asia/Shanghai): [CI run 38066938074](https://github.com/keweizhuazuki/sourceledger/actions/runs/38066938074) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 24 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation. These checks do not establish support for every filesystem or Markdown dialect.
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; regression tests.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; 24 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 Next: local Markdown-link discovery with review before tracking; a richer acceptance history; deterministic anchor mapping for more Markdown dialects; CI baseline import/export; optional Git rename suggestions. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
 

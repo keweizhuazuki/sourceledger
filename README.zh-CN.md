@@ -104,11 +104,11 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-初始本地测试在 Linux 运行。CI 配置覆盖 Linux、macOS、Windows 及 Python 3.10/3.13；配置存在不代表已成功执行。无法创建符号链接的平台会跳过相关测试。HTML 来自真实示例数据，浏览器布局验证与单元测试分别记录。
+验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38066938074](https://github.com/keweizhuazuki/sourceledger/actions/runs/38066938074) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 24 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试；这些验证不代表支持所有文件系统或 Markdown 方言。
 
 ## 已完成与下一步
 
-已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、回归测试。
+已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、24 项回归测试、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
 
 下一步：本地 Markdown 链接发现并人工选择追踪、更丰富的确认历史、更多 Markdown 锚点规则、CI 基线导入导出、可选的 Git 重命名建议。不承诺日期。反馈请说明反复遇到的实际任务，并提供不含敏感信息的最小示例。
 
