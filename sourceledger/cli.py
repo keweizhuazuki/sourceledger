@@ -5,6 +5,7 @@ import difflib
 import html
 import json
 import sys
+import sqlite3
 from pathlib import Path
 from .core import LedgerError, accept, check, read_text, sections
 
@@ -33,6 +34,8 @@ def render_html(report):
     cards = []
     for row in report["dependencies"]:
         detail = row.get("error") or (diff(row) if row["status"] != "current" else "Source unchanged since acceptance.")
+        if row.get("note_changed"):
+            detail = "Note edited since acceptance; content accuracy still needs human review.\n\n" + detail
         cards.append(f'<article><span class="status {esc(row["status"])}">{esc(row["status"])}</span><h2>{esc(row["note"])}</h2><p>{esc(row["source"])} · {esc(row.get("heading", "whole file"))} · occurrence {row.get("occurrence", 1)}</p><pre>{esc(detail)}</pre></article>')
     summary = " · ".join(f"{count} {status}" for status, count in report["summary"].items())
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>SourceLedger review</title><style>body{{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f2f5f8;color:#192e40}}header,article{{background:white;padding:24px;border-radius:12px;margin:16px 0;border:1px solid #d8e1ea}}h1{{font-size:36px;margin:8px 0}}h2{{font-size:20px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fa;padding:16px;border-radius:8px}}.status{{text-transform:uppercase;font-size:12px;font-weight:700;padding:5px 9px;border-radius:20px;background:#dfe8f1}}.changed,.new{{background:#ffedb3}}.error{{background:#ffcfcd}}.current{{background:#cbeedd}}code{{overflow-wrap:anywhere}}</style><header><small>LOCAL KNOWLEDGE · HUMAN REVIEW</small><h1>SourceLedger</h1><p>{esc(summary)}</p><p>Source changes identify notes to review. They do not prove a note is wrong or correct.</p></header>{''.join(cards)}<footer><p>Review token: <code>{report['review_token']}</code></p><p>This static report never accepts changes or loads external resources. Run the CLI accept command after review.</p></footer></html>'''
@@ -79,7 +82,7 @@ def main(argv=None):
         else:
             sys.stdout.write(output)
         return 2 if report["summary"]["error"] else 1 if report["summary"]["new"] + report["summary"]["changed"] else 0
-    except (LedgerError, OSError, ValueError) as exc:
+    except (LedgerError, OSError, ValueError, sqlite3.Error) as exc:
         print(f"sourceledger: {exc}", file=sys.stderr)
         return 2
 

@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 MAX_BYTES = 2 * 1024 * 1024
@@ -62,7 +63,7 @@ def sections(text):
             continue
         match = re.match(r"^ {0,3}(#{1,6})(?:[ \t]+(.*?)|[ \t]*)$", line.rstrip("\n"))
         if match:
-            title = re.sub(r"[ \t]+#+[ \t]*$", "", match[2] or "").strip()
+            title = re.sub(r"(?:^|[ \t]+)#+[ \t]*$", "", match[2] or "").strip()
             counts[title] = counts.get(title, 0) + 1
             found.append({"heading": title, "occurrence": counts[title], "level": len(match[1]), "line": index})
     return found
@@ -135,7 +136,7 @@ def inspect(root, db, note=None):
             content = extract(read_text(root, dep["source"]), dep.get("heading"), dep.get("occurrence", 1))
             status = "new" if baseline is None else "changed" if baseline[0] != content else "current"
             record.update(status=status, before=baseline[0] if baseline else "", after=content,
-                          note_changed=bool(baseline and baseline[1] != note_hash))
+                          note_changed=bool(baseline and baseline[1] != note_hash), note_hash=note_hash)
             evidence.append([key, digest(content), note_hash, baseline])
         except LedgerError as exc:
             record.update(status="error", error=str(exc))
@@ -146,12 +147,12 @@ def inspect(root, db, note=None):
 
 
 def check(root, note=None):
-    with connect(root) as db:
+    with closing(connect(root)) as db, db:
         return inspect(root, db, note)
 
 
 def accept(root, token, note=None):
-    with connect(root) as db:
+    with closing(connect(root)) as db, db:
         db.execute("BEGIN IMMEDIATE")
         report = inspect(root, db, note)
         if report["summary"]["error"]:
@@ -161,5 +162,5 @@ def accept(root, token, note=None):
         for dep in report["dependencies"]:
             key = dependency_key(dep)
             db.execute("INSERT INTO baselines VALUES (?,?,?,1) ON CONFLICT(key) DO UPDATE SET content=excluded.content,note_hash=excluded.note_hash,revision=baselines.revision+1",
-                       (key, dep["after"], digest(read_text(root, dep["note"]))))
+                       (key, dep["after"], dep["note_hash"]))
         return len(report["dependencies"])
