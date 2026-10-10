@@ -28,6 +28,34 @@ class LedgerTests(unittest.TestCase):
     def baseline(self):
         accept(self.root, check(self.root)['review_token'])
 
+    def test_accept_persists_exact_reviewed_note_hash(self):
+        from sourceledger import core
+        token = check(self.root)['review_token']
+        original = core.inspect
+        def inspect_then_edit(*args, **kwargs):
+            report = original(*args, **kwargs)
+            self.write('note.md', 'Concurrent note edit')
+            return report
+        with patch.object(core, 'inspect', side_effect=inspect_then_edit):
+            accept(self.root, token)
+        self.assertTrue(check(self.root)['dependencies'][0]['note_changed'])
+
+    def test_empty_heading_closing_hashes(self):
+        self.assertEqual(sections('# ###\n')[0]['heading'], '')
+        self.assertEqual(extract('# ###\nbody\n', ''), '# ###\nbody\n')
+
+    def test_html_includes_note_edit_warning(self):
+        self.baseline()
+        self.write('note.md', 'Edited note')
+        self.assertIn('Note edited since acceptance', render_html(check(self.root)))
+
+    def test_corrupt_database_is_controlled_cli_error(self):
+        (self.root / '.sourceledger').mkdir()
+        (self.root / '.sourceledger/state.sqlite3').write_bytes(b'not a database')
+        with contextlib.redirect_stderr(io.StringIO()) as output:
+            self.assertEqual(main(['--root', str(self.root), 'check']), 2)
+        self.assertIn('sourceledger:', output.getvalue())
+
     def test_initial_check_does_not_accept(self):
         self.assertEqual(check(self.root)['summary']['new'], 1)
         self.assertEqual(check(self.root)['summary']['new'], 1)
