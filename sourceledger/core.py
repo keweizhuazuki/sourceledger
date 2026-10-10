@@ -116,7 +116,11 @@ def connect(root):
     directory = safe_path(root, ".sourceledger")
     directory.mkdir(exist_ok=True)
     db = sqlite3.connect(safe_path(root, ".sourceledger/state.sqlite3"), timeout=10)
-    db.execute("CREATE TABLE IF NOT EXISTS baselines (key TEXT PRIMARY KEY, content TEXT NOT NULL, note_hash TEXT NOT NULL, revision INTEGER NOT NULL)")
+    try:
+        db.execute("CREATE TABLE IF NOT EXISTS baselines (key TEXT PRIMARY KEY, content TEXT NOT NULL, note_hash TEXT NOT NULL, revision INTEGER NOT NULL)")
+    except sqlite3.Error:
+        db.close()
+        raise
     return db
 
 

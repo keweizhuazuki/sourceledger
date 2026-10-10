@@ -8,6 +8,10 @@ SourceLedger is a local-first review queue for Markdown handbooks, runbooks, res
 
 It does not rewrite your notes, call an LLM, fetch URLs, or decide whether a statement is factually correct.
 
+![Actual desktop report rendered by Chromium in CI](docs/images/report-desktop.png)
+
+[Mobile screenshot](docs/images/report-mobile.png) · [Actual HTML example](docs/example-report.html)
+
 ## Try a complete example
 
 Python 3.10+ and Git are required. No runtime dependencies or service accounts.
@@ -80,7 +84,7 @@ sourceledger --root ./handbook check --format html --output review.html
 sourceledger --root ./handbook check --format json --output review.json
 ```
 
-Use the same `--note` selection for checking and acceptance. A token changes when selected source content, note content, dependency identity, or its accepted baseline changes. A token is a stale-review guard, not a password or signature. Existing output files are never overwritten.
+Use the same `--note` selection for checking and acceptance. A token changes when selected source content, note content, dependency identity, or its accepted baseline changes. A token is a stale-review guard, not a password or signature. Existing output files are never overwritten. CLI output and saved reports use UTF-8.
 
 Exit codes: `0` all selected sources current / action succeeded; `1` new or changed sources require review; `2` invalid configuration, missing source/note/section, unreadable file, or operation error. A missing or renamed source is an error, never an accepted deletion. Correct the path deliberately and review the new dependency.
 
@@ -104,11 +108,11 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-The initial local suite runs on Linux. The repository CI matrix is configured for Linux, macOS, and Windows with Python 3.10 and 3.13; a configured workflow is not itself evidence of a successful run. Symlink tests skip if the OS does not permit creating them. The HTML report is generated from real demo data; browser layout validation is separate from unit tests.
+Verified on 2026-10-11 (Asia/Shanghai): [CI run 38066938074](https://github.com/keweizhuazuki/sourceledger/actions/runs/38066938074) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 24 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation. These checks do not establish support for every filesystem or Markdown dialect.
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; regression tests.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; 24 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 Next: local Markdown-link discovery with review before tracking; a richer acceptance history; deterministic anchor mapping for more Markdown dialects; CI baseline import/export; optional Git rename suggestions. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
 

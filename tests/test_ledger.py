@@ -3,11 +3,14 @@ import io
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
+import sys
+import os
 import tempfile
 import unittest
 from unittest.mock import patch
 from sourceledger.core import LedgerError, accept, check, connect, extract, sections
-from sourceledger.cli import main, render_html
+from sourceledger.cli import main, render_html, diff
 
 
 class LedgerTests(unittest.TestCase):
@@ -55,6 +58,25 @@ class LedgerTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()) as output:
             self.assertEqual(main(['--root', str(self.root), 'check']), 2)
         self.assertIn('sourceledger:', output.getvalue())
+
+    def test_database_closed_when_schema_initialization_fails(self):
+        fake = unittest.mock.MagicMock()
+        fake.execute.side_effect = sqlite3.DatabaseError('bad schema')
+        with patch('sourceledger.core.sqlite3.connect', return_value=fake):
+            with self.assertRaises(sqlite3.DatabaseError):
+                connect(self.root)
+        fake.close.assert_called_once()
+
+    def test_diff_without_final_newline_has_separate_lines(self):
+        output = diff({'before': 'old', 'after': 'new'})
+        self.assertIn('-old\n\\ No newline at end of file\n+new\n', output)
+        self.assertNotIn('-old+new', output)
+        self.assertIn('\\ No newline at end of file', diff({'before': 'same\n', 'after': 'same'}))
+
+    def test_cli_redirected_output_is_utf8_under_legacy_encoding(self):
+        result = subprocess.run([sys.executable, '-m', 'sourceledger', '--root', str(self.root), 'check'], capture_output=True, env={**os.environ, 'PYTHONIOENCODING': 'cp1252'})
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('←', result.stdout.decode('utf-8'))
 
     def test_initial_check_does_not_accept(self):
         self.assertEqual(check(self.root)['summary']['new'], 1)
@@ -114,18 +136,18 @@ class LedgerTests(unittest.TestCase):
         report = check(self.root)
         with self.assertRaises(LedgerError):
             accept(self.root, report['review_token'])
-        with connect(self.root) as db:
+        with contextlib.closing(connect(self.root)) as db, db:
             self.assertEqual(db.execute('SELECT COUNT(*) FROM baselines').fetchone()[0], 0)
 
     def test_sql_failure_rolls_back_entire_batch(self):
         self.write('other.md', 'Other')
         self.manifest([{'note': 'note.md', 'source': 'source.md'}, {'note': 'note.md', 'source': 'other.md'}])
         report = check(self.root)
-        with connect(self.root) as db:
+        with contextlib.closing(connect(self.root)) as db, db:
             db.execute("CREATE TRIGGER reject_second BEFORE INSERT ON baselines WHEN (SELECT COUNT(*) FROM baselines) > 0 BEGIN SELECT RAISE(ABORT,'test failure'); END")
         with self.assertRaises(sqlite3.IntegrityError):
             accept(self.root, report['review_token'])
-        with connect(self.root) as db:
+        with contextlib.closing(connect(self.root)) as db, db:
             self.assertEqual(db.execute('SELECT COUNT(*) FROM baselines').fetchone()[0], 0)
 
     def test_selected_note_acceptance(self):
@@ -151,7 +173,7 @@ class LedgerTests(unittest.TestCase):
     def test_normalized_newlines(self):
         self.baseline()
         path = self.root / 'source.md'
-        path.write_bytes(path.read_bytes().replace(b'\n', b'\r\n'))
+        path.write_bytes(path.read_bytes().replace(b'\r\n', b'\n').replace(b'\n', b'\r\n'))
         self.assertEqual(check(self.root)['summary']['current'], 1)
 
     def test_html_escapes_source_content(self):
