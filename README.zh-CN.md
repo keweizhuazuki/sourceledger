@@ -52,7 +52,7 @@ py -3 -m venv .venv
 +Temporary access lasts 14 days. A manager must approve it.
 ```
 
-Windows 未激活虚拟环境时，在源码目录中将后续命令的 `sourceledger` 替换为 `.venv\Scripts\sourceledger.exe`；从其他目录运行时请使用该程序的完整路径。也支持通过 `python -m pip install .` 普通安装（非可编辑安装），安装后的 CLI 可在源码目录外运行。Git 用于克隆及 `suggest-renames`，普通本地复核无需 Git。
+Windows 未激活虚拟环境时，在源码目录中将后续命令的 `sourceledger` 替换为 `.venv\Scripts\sourceledger.exe`；从其他目录运行时请使用该程序的完整路径。也支持通过 `python -m pip install .`（Windows 未激活时用 `.venv\Scripts\python.exe -m pip install .`）普通安装（非可编辑安装），安装后的 CLI 可在源码目录外运行。Git 用于克隆及 `suggest-renames`，普通本地复核无需 Git。
 
 ## 接入已有知识库
 
@@ -164,7 +164,7 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38069408862](https://github.com/keweizhuazuki/sourceledger/actions/runs/38069408862) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 86 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
+验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38076246528](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076246528) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 88 项测试、安装、编译检查和实际示例。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
 
 ## 已完成与下一步
 

@@ -54,7 +54,7 @@ Expected useful output:
 +Temporary access lasts 14 days. A manager must approve it.
 ```
 
-On Windows without activation, replace `sourceledger` in the commands below with `.venv\Scripts\sourceledger.exe` (from the checkout), or use the full path to that executable from another folder. `python -m pip install .` also supports a normal, non-editable installation; the installed CLI can run outside the checkout. Git is needed for cloning and `suggest-renames`, not for ordinary local reviews.
+On Windows without activation, replace `sourceledger` in the commands below with `.venv\Scripts\sourceledger.exe` (from the checkout), or use the full path to that executable from another folder. `python -m pip install .` (or `.venv\Scripts\python.exe -m pip install .` on non-activated Windows) also supports a normal, non-editable installation; the installed CLI can run outside the checkout. Git is needed for cloning and `suggest-renames`, not for ordinary local reviews.
 
 ## Use your existing knowledge base
 
@@ -168,7 +168,7 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-Verified on 2026-10-11 (Asia/Shanghai): [CI run 38069408862](https://github.com/keweizhuazuki/sourceledger/actions/runs/38069408862) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 86 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation; named-pipe tests skip where that OS facility is unavailable. These checks do not establish support for every filesystem or Markdown dialect.
+Verified on 2026-10-11 (Asia/Shanghai): [CI run 38076246528](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076246528) passed all six Linux/macOS/Windows × Python 3.10/3.13 jobs, including 88 tests, installation, compilation, and the runnable demo. The Chromium job passed desktop/mobile layout and no-network assertions. Screenshots above are genuine CI captures of the checked-in demo report. Symlink tests skip on systems that disallow creation; named-pipe tests skip where that OS facility is unavailable. These checks do not establish support for every filesystem or Markdown dialect.
 
 ## Completed and next upgrades
 

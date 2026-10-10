@@ -3,7 +3,7 @@
 ## CLI root errors and installation / CLI 根目录错误与安装 — 2026-10-11 Asia/Shanghai
 
 - Reproduced `--root` symlink loops raising a traceback with exit 1; invalid roots now return the documented operation-error exit 2 without opening baseline storage.
-- Added real-path and injected exception regressions for Python version differences; 88 tests pass locally.
+- Added real-path and injected exception regressions for Python version differences; 88 tests pass locally and across all six OS/Python jobs in [CI run 38076246528](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076246528), alongside both demos and Chromium checks.
 - Verified a clean non-editable wheel installation on Linux Python 3.12, both entry points outside the checkout, and clarified Windows commands without environment activation. Cross-platform installation remains covered by existing editable-install CI.
 
 修复根目录符号链接循环误返回待复核状态的问题；补充路径与异常回归测试，以及未激活虚拟环境的 Windows 调用方式。验证 Linux Python 3.12 全新普通安装和源码目录外调用；跨平台安装继续由现有可编辑安装 CI 覆盖。
