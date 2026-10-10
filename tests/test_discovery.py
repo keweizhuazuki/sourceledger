@@ -98,6 +98,14 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(report['candidates'], [])
         self.assertIn('Same-document', report['skipped'][0]['reason'])
 
+    def test_blockquoted_html_and_escaped_backtick_parity_are_masked(self):
+        text = '> <script>\n> [fake](../sources/policy.md)\n> </script>'
+        self.assertEqual(self.scan(text)['candidates'], [])
+        text = r'\\`[fake](../sources/policy.md)`'
+        self.assertEqual(self.scan(text)['candidates'], [])
+        text = r'`code \` [real](../sources/policy.md)'
+        self.assertEqual(len(self.scan(text)['candidates']), 1)
+
     def test_relative_paths_duplicate_fragments_and_deduplication(self):
         report = self.scan('[a](../sources/policy.md#access-1)\n[again](../sources/policy.md#access-1)')
         self.assertEqual(len(report['candidates']), 1)

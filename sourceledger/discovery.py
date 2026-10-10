@@ -28,12 +28,29 @@ def unescape(value):
     return re.sub(pattern, replace, value)
 
 
+def strip_containers(line):
+    previous = None
+    while previous != line:
+        previous = line
+        line = re.sub(r'^ {0,3}>[ \t]?', '', line)
+        line = re.sub(r'^ {0,3}(?:[-*+]|[0-9]+[.)])[ \t]+', '', line)
+    return line
+
+
+def escaped_at(line, index):
+    count = 0
+    while index > 0 and line[index - 1] == '\\':
+        count += 1
+        index -= 1
+    return count % 2 == 1
+
+
 def visible_lines(text):
     """Mask code/comments and conservatively skip raw HTML blocks."""
     fence, comment, html_block, html_end = None, False, False, None
     inline_run, number = None, 0
     for number, original in enumerate(text.splitlines(), 1):
-        line = original
+        line = strip_containers(original)
         fence_line = re.sub(r'^(?: {0,3}>[ \t]?)+', '', line)
         fence_line = re.sub(r'^ {0,3}(?:[-*+]|[0-9]+[.)])[ \t]+', '', fence_line)
         marker = re.match(r'^ {0,3}(`{3,}|~{3,})(.*)$', fence_line)
@@ -100,7 +117,7 @@ def visible_lines(text):
             continue
         output, index = [], 0
         while index < len(line):
-            if line[index] == '`' and (index == 0 or line[index - 1] != '\\'):
+            if line[index] == '`' and (inline_run is not None or not escaped_at(line, index)):
                 end = index
                 while end < len(line) and line[end] == '`':
                     end += 1
