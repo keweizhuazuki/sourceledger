@@ -180,15 +180,35 @@ def destination(line, start):
     return unescape(value), index + match.end()
 
 
+# Deliberately literal punctuation only: no general Markdown inline renderer.
+_ANCHOR_PUNCTUATION = ".,;:!?\"'()/"
+_ANCHOR_REMOVE = str.maketrans('', '', _ANCHOR_PUNCTUATION)
+
+
+def literal_heading_slug(title):
+    if any(not (char.isalnum() or char in " _-" + _ANCHOR_PUNCTUATION) for char in title):
+        raise LedgerError('Fragment requires manual review: target heading contains unsupported markup or punctuation; use headings and configure explicitly')
+    for run in re.finditer(r'_+', title):
+        if (run.start() == 0 or run.end() == len(title)
+                or not title[run.start() - 1].isalnum() or not title[run.end()].isalnum()):
+            raise LedgerError('Fragment requires manual review: underscores may be emphasis markup; only intraword underscores are supported')
+    if re.search(r':[A-Za-z0-9_+\-]+:', title):
+        raise LedgerError('Fragment requires manual review: emoji shortcodes may change rendered heading text')
+    base = title.lower().translate(_ANCHOR_REMOVE).replace(' ', '-')
+    if title and not base:
+        raise LedgerError('Fragment requires manual review: punctuation-only heading has an unsupported empty anchor')
+    return base
+
+
 def fragment_heading(content, fragment):
     if re.search(r'<!|<\?|</?[A-Za-z]|^ {0,3}>|^ {0,3}(?:[-*+]|[0-9]+[.)])(?:[ \t]+|$)|^ {0,3}(?:=+|-+)\s*$', content, re.MULTILINE):
         raise LedgerError('Fragment requires manual review: HTML, container or Setext syntax can change anchor numbering')
     headings = sections(content)
-    if any(not re.fullmatch(r'[\w -]*', item['heading']) for item in headings):
-        raise LedgerError('Fragment requires manual review: target contains non-plain headings; use headings and configure explicitly')
+    # Validate every heading before resolving any candidate: an unsupported
+    # earlier/later heading can collide with the rendered slug.
+    bases = [literal_heading_slug(item['heading']) for item in headings]
     used = set()
-    for item in headings:
-        base = item['heading'].lower().replace(' ', '-')
+    for item, base in zip(headings, bases):
         slug, suffix = base, 0
         while slug in used:
             suffix += 1
@@ -196,7 +216,7 @@ def fragment_heading(content, fragment):
         used.add(slug)
         if slug == fragment:
             return {'heading': item['heading'], 'occurrence': item['occurrence']}
-    raise LedgerError(f'Unresolved fragment #{fragment}; no supported plain-ATX anchor matches')
+    raise LedgerError(f'Unresolved fragment #{fragment}; no supported literal-ATX anchor matches')
 
 
 def resolve_link(root, note, raw):

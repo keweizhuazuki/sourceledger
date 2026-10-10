@@ -26,6 +26,65 @@ class DiscoveryTests(unittest.TestCase):
         self.write('notes/start.md', text)
         return discover(self.root, ['notes/start.md'])
 
+    def test_checked_in_anchor_example_is_read_only_and_reviewable(self):
+        root = Path(__file__).resolve().parents[1] / 'examples/discovery'
+        report = discover(root, ['anchor-note.md'])
+        self.assertEqual(len(report['candidates']), 8)
+        self.assertEqual(len(report['skipped']), 2)
+        self.assertFalse((root / '.sourceledger').exists())
+        self.assertEqual(report['candidates'][6]['dependency']['occurrence'], 2)
+
+    def test_literal_punctuation_heading_fragments_preserve_raw_titles(self):
+        examples = [('Install (Linux/macOS)', 'install-linuxmacos'),
+                    ("What's new?", 'whats-new'), ('Version 2.0', 'version-20'),
+                    ('FAQ: setup!', 'faq-setup'), ('Say "hello", please; now.', 'say-hello-please-now')]
+        self.write('sources/readme.md', '\n'.join('## ' + title + '\nDetails.' for title, _ in examples))
+        report = self.scan('\n'.join(f'[section](../sources/readme.md#{slug})' for _, slug in examples))
+        self.assertEqual([row['dependency']['heading'] for row in report['candidates']], [title for title, _ in examples])
+        self.assertEqual(report['skipped'], [])
+        self.assertFalse((self.root / '.sourceledger').exists())
+
+    def test_punctuation_slug_collisions_keep_exact_occurrences(self):
+        self.write('sources/collisions.md', '## FAQ!\nfirst\n## FAQ\nsecond\n## FAQ-1\nthird\n## FAQ!\nfourth\n')
+        report = self.scan('[a](../sources/collisions.md#faq) [b](../sources/collisions.md#faq-1) [c](../sources/collisions.md#faq-1-1) [d](../sources/collisions.md#faq-2)')
+        self.assertEqual([(row['dependency']['heading'], row['dependency']['occurrence']) for row in report['candidates']], [('FAQ!', 1), ('FAQ', 1), ('FAQ-1', 1), ('FAQ!', 2)])
+        self.write('sourceledger.json', json.dumps({'version': 1, 'dependencies': [row['dependency'] for row in report['candidates']]}))
+        checked = check(self.root)
+        self.assertEqual(checked['summary']['new'], 4)
+        accept(self.root, checked['review_token'])
+        self.assertEqual(check(self.root)['summary']['current'], 4)
+
+    def test_intraword_underscores_are_literal_but_emphasis_is_rejected(self):
+        for title in ['api_key', 'api__key', '版本_2']:
+            with self.subTest(title=title):
+                self.write('sources/underscores.md', '## ' + title + '\nDetails')
+                report = self.scan(f'[a](../sources/underscores.md#{title.lower()})')
+                self.assertEqual(report['candidates'][0]['dependency']['heading'], title)
+        for title in ['_Access_', '__Access__', 'Read _Access_', 'Access_', '_Access', 'api_-key']:
+            with self.subTest(title=title):
+                self.write('sources/underscores.md', '## ' + title + '\nDetails')
+                report = self.scan('[a](../sources/underscores.md#_access_) [b](../sources/underscores.md#access)')
+                self.assertEqual(report['candidates'], [])
+                self.assertTrue(all('underscores may be emphasis' in row['reason'] for row in report['skipped']))
+
+    def test_unsupported_heading_anywhere_prevents_guessed_numbering(self):
+        for unsupported in ['_FAQ_', '**FAQ**', '`FAQ`', '[FAQ](somewhere.md)', 'FAQ &amp; answers', 'FAQ\\!', ':warning: FAQ']:
+            with self.subTest(unsupported=unsupported):
+                self.write('sources/mixed.md', '## FAQ!\nfirst\n## ' + unsupported + '\nsecond\n')
+                report = self.scan('[a](../sources/mixed.md#faq)')
+                self.assertEqual(report['candidates'], [])
+                self.assertIn('manual review', report['skipped'][0]['reason'])
+                # Whole-file dependencies do not require anchor interpretation.
+                self.assertEqual(len(self.scan('[all](../sources/mixed.md)')['candidates']), 1)
+
+    def test_nonascii_punctuation_and_punctuation_only_headings_are_skipped(self):
+        for title in ['What’s new?', 'FAQ：设置', 'A—B', '“FAQ”', '!!!']:
+            with self.subTest(title=title):
+                self.write('sources/rich.md', '## ' + title + '\nDetails')
+                report = self.scan('[a](../sources/rich.md#faq)')
+                self.assertEqual(report['candidates'], [])
+                self.assertIn('manual review', report['skipped'][0]['reason'])
+
     def test_raw_script_and_mixed_indent_code_never_become_candidates(self):
         report = self.scan('<script>\n\n[a](../sources/policy.md)\n</script>\n\n \t[a](../sources/policy.md)')
         self.assertEqual(report['candidates'], [])

@@ -106,10 +106,13 @@ python -m sourceledger --root examples discover discovery/note.md
 
 - 普通单行行内链接，例如 `[policy](../sources/policy.md#access)`；尖括号内带空格的路径；百分号编码的 UTF-8 路径/片段；目标中配对或转义的括号；可选的单引号/双引号标题。
 - 路径相对笔记解析，必须在所选根目录内并指向可读的 UTF-8 文件。相同依赖去重，但保留每个来源行号。
-- 片段采用保守的纯文本标题规则：目标的所有 ATX 标题仅含 Unicode 单词字符、ASCII 空格、连字符或下划线；转小写后每个空格替换为连字符，冲突按文档顺序追加 `-1`、`-2` 等并跳过已用标识。不保证与 GitHub、Obsidian 或其他渲染器完全等价。HTML/注释、列表/引用容器或 Setext 语法、非纯文本标题和未知片段需要用 `headings` 检查并手动配置。
+- 片段采用保守的字面标题规则：Unicode 字母/数字、ASCII 空格、连字符、词内下划线，以及字面 ASCII 标点 `.,;:!?"'()/`。转小写后删除这些标点，每个空格替换为连字符；冲突按文档顺序追加 `-1`、`-2` 等并跳过已用标识。候选依赖保留确切原始 ATX 标题及出现次数，不用生成的锚点替换标题。下划线段仅在两侧都是字母/数字时支持（如 `api_key`、`api__key`）；`_Access_` 可能是格式标记，因此拒绝。目标的所有标题都通过验证后，才匹配片段。
+- 此有限规则依据 [GitHub 官方章节链接说明](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#section-links) 处理上述字面形式。[CommonMark 将 ATX 标题内容作为行内 Markdown 解析](https://spec.commonmark.org/0.31.2/#atx-headings)，因此不保证与 GitHub、Obsidian 或其他渲染器普遍等价。HTML/注释、容器、Setext 标题、行内格式/代码/链接/实体/转义、类似 emoji 短代码的文本、非 ASCII 标点、纯标点空锚点和未知片段仍需用 `headings` 检查并手动配置。
 - 忽略围栏/缩进代码、行内代码及 HTML 注释。原始/行内 HTML、引用式或 Wiki 链接所在行、多行链接/标题、图片、查询字符串、外部协议和同页导航会被跳过或标为不支持。这不是完整 CommonMark 解析器；复杂嵌套标签和未闭合分隔符需人工检查，保守处理可能跳过整行或整块。
 
 成功生成报告退出 `0`，即使有跳过项；指定笔记无效或输出失败退出 `2`。候选不保证完整，也不证明事实依赖关系。发现后来源若变化，仍由正常的 `check`/`accept` 流程重新检查。
+
+字面示例：`Install (Linux/macOS)` → `#install-linuxmacos`，`What's new?` → `#whats-new`，`Version 2.0` → `#version-20`。运行 `python -m sourceledger --root examples/discovery discover anchor-note.md` 查看[真实合成示例](docs/anchor-example.txt)，包含碰撞标题和被明确跳过的强调标记。结果仍需人工复核，不修改清单或基线。
 
 ## 为暂存的 Git 重命名提供候选
 
@@ -211,10 +214,10 @@ python -m compileall -q sourceledger tests
 
 ## 已完成与下一步
 
-已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、只读且需复核的链接发现与路径/片段诊断、只读精确暂存 Git 替代路径建议、已确认基线导出与无需数据库的 CI 快照检查、需明确复核的空数据库导入及独立来源记录、125 项回归测试、受控的无效根目录错误、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
+已完成：整文件/章节依赖、令牌绑定的明确确认、单篇复核、来源缺失错误、事务基线、文本/JSON/HTML 报告、可运行的一次性示例、带原子迁移、单篇筛选与分页的确认历史、只读且需复核的链接发现与路径/片段诊断、只读精确暂存 Git 替代路径建议、已确认基线导出与无需数据库的 CI 快照检查、需明确复核的空数据库导入及独立来源记录、字面标点锚点及保守的格式标记拒绝、131 项回归测试、受控的无效根目录错误、Windows UTF-8 输出与数据库清理验证、桌面/手机浏览器检查。
 
 已完成批次见[变更记录](CHANGELOG.md)。
 
-下一步：更多 Markdown 锚点规则；根据实际使用改进导入/历史保留体验。不承诺日期。反馈请说明反复遇到的实际任务，并提供不含敏感信息的最小示例。
+下一步：按真实需求增加有明确测试的 Markdown 锚点形式；根据实际使用改进导入/历史保留体验。不承诺日期。反馈请说明反复遇到的实际任务，并提供不含敏感信息的最小示例。
 
 本仓库尚未选择或授予许可证。
