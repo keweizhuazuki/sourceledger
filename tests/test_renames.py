@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
-from sourceledger.core import LedgerError, accept, check, digest
+from sourceledger.core import LedgerError, accept, check, digest, safe_path
 from sourceledger.renames import git_read, staged_entries, suggest_renames
 from sourceledger.cli import main
 
@@ -151,7 +151,13 @@ class RenameTests(unittest.TestCase):
             self.skipTest('Symlink creation unavailable')
         self.write('sourceledger.json', json.dumps({'version': 1, 'dependencies': [{'note': 'note.md', 'source': 'alias/../policy.md', 'heading': 'Access'}]}))
         self.git('mv', 'policy.md', 'new.md')
-        self.assertEqual(suggest_renames(self.root)['suggestions'], [])
+        report = suggest_renames(self.root)
+        if safe_path(self.root, 'alias/../policy.md').exists():
+            self.assertEqual(report['suggestions'], [])
+        else:
+            # Windows may normalize '..' before following the junction/symlink.
+            self.assertEqual(report['suggestions'][0]['candidates'], [])
+            self.assertIn('symlinks', report['suggestions'][0]['reason'])
 
     def test_missing_symlink_based_path_is_not_reinterpreted_as_git_path(self):
         (self.root / 'a/nested').mkdir(parents=True)

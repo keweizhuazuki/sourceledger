@@ -56,6 +56,20 @@ def staged_entries(raw):
     return result
 
 
+def traverses_symlink(root, name):
+    """Inspect original components before the OS can normalize away alias/.. ."""
+    current = root
+    for part in Path(name).parts:
+        if part == '.':
+            continue
+        current = current.parent if part == '..' else current / part
+        if not current.is_relative_to(root):
+            return True
+        if current.is_symlink() or getattr(current, 'is_junction', lambda: False)():
+            return True
+    return False
+
+
 def suggest_renames(root):
     root = root.resolve()
     if '\n' in str(root) or '\r' in str(root):
@@ -82,7 +96,7 @@ def suggest_renames(root):
             resolved = safe_path(root, original)
             if not resolved.exists():
                 logical = Path(os.path.normpath(original)).as_posix()
-                if resolved != root / logical:
+                if traverses_symlink(root, original) or resolved != root / logical:
                     indirect.add(original)
                 missing.setdefault(original, []).append({'field': field, 'dependency': dep})
     suggestions = []
@@ -97,6 +111,8 @@ def suggest_renames(root):
                 except ValueError:
                     continue  # Never expose or read files outside the chosen knowledge base.
                 try:
+                    if traverses_symlink(root, relative) or safe_path(root, relative) != root / relative:
+                        raise LedgerError('Candidate traverses symlinks; direct regular-file paths are required')
                     content = read_text(root, relative)
                     for usage in usages:
                         if usage['field'] == 'source':
