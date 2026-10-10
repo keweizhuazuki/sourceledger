@@ -6,7 +6,8 @@
 - Successful acceptances atomically preserve UTC timestamps, reviewed tokens, scope, revisions, source snapshots, and note hashes alongside baseline updates.
 - Existing baseline-only databases migrate in place; missing historical times are never fabricated.
 - Failed acceptance or failed history insertion rolls back the complete batch. History remains accessible after notes, sources, or the manifest are removed.
-- Added migration, rollback, snapshot, filtering, pagination and CLI regressions; synchronized both READMEs and the runnable demo.
+- Added migration, rollback, snapshot, filtering, pagination, concurrency and CLI regressions; synchronized both READMEs and the runnable demo.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38067579257): 37 tests across six OS/Python combinations, plus the Chromium report checks.
 
 新增确认历史命令、单篇过滤、分页及文本/JSON 输出；确认记录与基线在同一事务保存。旧数据库保留基线并迁移，不虚构历史时间；失败时整批回滚，删除原文件后仍能查询历史。同步中英文说明、示例和回归测试。
 
