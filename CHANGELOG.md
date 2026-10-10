@@ -1,5 +1,14 @@
 # Completed changes / 已完成变更
 
+## Staged Git rename suggestions / 暂存 Git 重命名候选 — 2026-10-11 Asia/Shanghai
+
+- Reproduced missing-source failure after `git mv`; added read-only `suggest-renames` for missing manifest note/source paths.
+- Exact staged deletion/addition blob matches only; duplicate blobs remain explicitly ambiguous, and unsupported/edited/untracked/committed moves remain unresolved.
+- Added process-local Git safety controls, metadata parsing, no-state-change and hook-suppression tests, plus a real disposable Git demo.
+- No manifest rewrite, baseline/history migration, Git mutation or network operation.
+
+重现 Git 移动后旧来源缺失的问题，新增精确暂存 blob 候选报告；明确保留歧义与不支持情况。加入只读/安全边界测试及真实临时示例，不修改清单、基线、历史或 Git，不联网。
+
 ## Reviewed link discovery / 需复核的链接发现 — 2026-10-11 Asia/Shanghai
 
 - Added read-only `discover` for explicit Markdown notes: inline local links, relative/percent-encoded paths, conservative plain-ATX fragments, deduplication and line references.
@@ -32,6 +41,6 @@
 
 ## Next / 下一步
 
-More Markdown anchor dialects; CI baseline import/export; optional Git rename suggestions. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
+More Markdown anchor dialects; CI baseline import/export. History retention/export ergonomics can follow real usage feedback. No release dates or external-service dependency promised.
 
-下一步考虑更多锚点规则、CI 基线导入导出及 Git 重命名建议。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。
+下一步考虑更多锚点规则、CI 基线导入导出。历史保留与导出体验根据真实使用反馈改进，不承诺日期或外部服务依赖。

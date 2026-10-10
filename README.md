@@ -109,6 +109,24 @@ Supported discovery subset:
 
 Discovery exits `0` when a report is produced, even with skipped links, or `2` for an invalid requested note/output operation. Candidates are suggestions, never proof of completeness or factual dependency. Source changes after discovery are evaluated by the ordinary `check`/`accept` flow.
 
+## Suggest replacements after a staged Git rename
+
+```sh
+sourceledger --root ./handbook suggest-renames
+sourceledger --root ./handbook suggest-renames --format json
+python examples/rename_demo.py
+```
+
+A repeatable problem: after `git mv policy.md access-policy.md`, the old manifest source is missing and `check` correctly fails. This command helps locate possible replacements using only existing local Git metadata. The [actual disposable demo](docs/rename-example.txt) reproduces the error and verifies the manifest, Git index and baseline database stay byte-identical during suggestion.
+
+For each missing note/source path, it joins **staged regular-file deletions and additions with exactly the same Git blob ID** relative to HEAD. All matching in-root, readable UTF-8 destinations are displayed. Multiple additions or deletions sharing a blob are marked ambiguous; one candidate is still only a suggestion, not proof of a rename. Required source sections must exist in the current candidate file. JSON includes current normalized-text hashes, while the exact-identity evidence applies to the staged blobs: working files can have unstaged edits.
+
+Review the paths and current content, edit the manifest yourself, then run `check` and explicitly accept the newly identified dependencies. Old baselines/history are not transplanted. Existing paths are never suggested for replacement.
+
+Boundaries: no similarity guessing, unstaged/untracked moves, already-committed rename search, binary files, symlink/submodule entries, remote Git operations or mutation. Git must be installed, HEAD must exist, the root must be inside a local working tree, and paths must be UTF-8. A missing path with no exact staged match remains unresolved. Symlinks escaping the selected root and unreadable/missing-section candidates are rejected. Repository roots containing line breaks and missing paths traversing symlink aliases are unsupported.
+
+Git runs with external diffs, text conversion, hooks, filesystem-monitor hooks, lazy fetching, transports, inherited Git overrides and optional writes disabled for that child process. User/repository settings are not changed. Commands have a 10-second timeout and reject metadata output above 8 MiB. This is a local helper, not a sandbox for a malicious Git installation or a concurrently manipulated working tree. Exit `0` means a report was produced, including unresolved cases; `2` means configuration/Git inspection failed.
+
 ## Inspect acceptance history
 
 ```sh
@@ -150,10 +168,10 @@ Verified on 2026-10-11 (Asia/Shanghai): [CI run 38068508378](https://github.com/
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; 65 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; read-only exact staged Git replacement suggestions; 86 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 See the [completed changes](CHANGELOG.md).
 
-Next: deterministic anchor mapping for more Markdown dialects; CI baseline import/export; optional Git rename suggestions. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
+Next: deterministic anchor mapping for more Markdown dialects; CI baseline import/export. No dates promised. Feedback should describe the repeated workflow and include a minimal non-sensitive fixture.
 
 No license has been selected or granted by this repository.
