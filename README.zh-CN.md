@@ -207,7 +207,7 @@ python -m unittest discover -s tests -v
 python -m compileall -q sourceledger tests
 ```
 
-验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38076905944](https://github.com/keweizhuazuki/sourceledger/actions/runs/38076905944) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 105 项测试、安装、编译检查和实际示例（包括便携基线场景）。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
+验证日期为 2026-10-11（Asia/Shanghai）：[CI 运行 38077381178](https://github.com/keweizhuazuki/sourceledger/actions/runs/38077381178) 的 Linux/macOS/Windows × Python 3.10/3.13 共六个任务全部通过，包含 125 项测试、安装、编译检查和实际示例（包括便携基线和复核导入场景）。Chromium 桌面/手机布局与无网络请求断言也通过。上面的截图来自 CI 对仓库内真实示例报告的渲染。禁止创建符号链接的平台会跳过相关测试，不支持命名管道的系统也会跳过对应测试；这些验证不代表支持所有文件系统或 Markdown 方言。
 
 ## 已完成与下一步
 

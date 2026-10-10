@@ -5,7 +5,7 @@
 - Added no-write `import-baseline` previews with exact accepted contents, manifest-matched scope and an explicit import token.
 - Token-bound import initializes empty ledgers only. Snapshot, manifest and emptiness are rechecked under the write lock; baselines and provenance commit atomically. Existing data/history is never overwritten.
 - Schema 2 preserves separate import provenance and existing local acceptance history. Imported timestamps are never presented as original acceptance times; current edits still require normal review.
-- Added migration, rollback, concurrency, stale-preview, no-write and provenance-filter tests plus a disposable synthetic demo; synchronized both README languages and actual output.
+- [Verified CI](https://github.com/keweizhuazuki/sourceledger/actions/runs/38077381178): 125 tests across six OS/Python jobs and Chromium checks passed. Added migration, rollback, concurrency, stale-preview, no-write and provenance-filter tests plus a disposable synthetic demo; synchronized both README languages and actual output.
 
 新增只读预览与令牌绑定的空数据库导入；事务内重新验证快照、清单及空状态，禁止覆盖。结构版本 2 单独保存准确导入记录并保留原确认历史；补充迁移、回滚、并发、过期预览及筛选测试和真实合成示例。
 
