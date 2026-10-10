@@ -11,7 +11,8 @@ from .core import LedgerError, accept, check, read_text, sections
 
 
 def diff(row):
-    return "".join(difflib.unified_diff(row.get("before", "").splitlines(keepends=True), row.get("after", "").splitlines(keepends=True), fromfile="accepted", tofile="current"))
+    lines = difflib.unified_diff(row.get("before", "").splitlines(keepends=True), row.get("after", "").splitlines(keepends=True), fromfile="accepted", tofile="current")
+    return "".join(line if line.endswith("\n") else line + "\n\\ No newline at end of file\n" for line in lines)
 
 
 def render_text(report):
@@ -41,7 +42,15 @@ def render_html(report):
     return f'''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>SourceLedger review</title><style>body{{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;background:#f2f5f8;color:#192e40}}header,article{{background:white;padding:24px;border-radius:12px;margin:16px 0;border:1px solid #d8e1ea}}h1{{font-size:36px;margin:8px 0}}h2{{font-size:20px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fa;padding:16px;border-radius:8px}}.status{{text-transform:uppercase;font-size:12px;font-weight:700;padding:5px 9px;border-radius:20px;background:#dfe8f1}}.changed,.new{{background:#ffedb3}}.error{{background:#ffcfcd}}.current{{background:#cbeedd}}code{{overflow-wrap:anywhere}}</style><header><small>LOCAL KNOWLEDGE · HUMAN REVIEW</small><h1>SourceLedger</h1><p>{esc(summary)}</p><p>Source changes identify notes to review. They do not prove a note is wrong or correct.</p></header>{''.join(cards)}<footer><p>Review token: <code>{report['review_token']}</code></p><p>This static report never accepts changes or loads external resources. Run the CLI accept command after review.</p></footer></html>'''
 
 
+def configure_output():
+    """Use UTF-8 for redirected output as well as modern Windows terminals."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
+
 def main(argv=None):
+    configure_output()
     parser = argparse.ArgumentParser(description="Review local source changes that affect your Markdown notes")
     parser.add_argument("--root", type=Path, default=Path("."), help="knowledge-base folder (default: current directory)")
     sub = parser.add_subparsers(dest="command", required=True)

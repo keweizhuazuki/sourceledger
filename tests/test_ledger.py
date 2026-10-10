@@ -3,11 +3,14 @@ import io
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
+import sys
+import os
 import tempfile
 import unittest
 from unittest.mock import patch
 from sourceledger.core import LedgerError, accept, check, connect, extract, sections
-from sourceledger.cli import main, render_html
+from sourceledger.cli import main, render_html, diff
 
 
 class LedgerTests(unittest.TestCase):
@@ -63,6 +66,17 @@ class LedgerTests(unittest.TestCase):
             with self.assertRaises(sqlite3.DatabaseError):
                 connect(self.root)
         fake.close.assert_called_once()
+
+    def test_diff_without_final_newline_has_separate_lines(self):
+        output = diff({'before': 'old', 'after': 'new'})
+        self.assertIn('-old\n\\ No newline at end of file\n+new\n', output)
+        self.assertNotIn('-old+new', output)
+        self.assertIn('\\ No newline at end of file', diff({'before': 'same\n', 'after': 'same'}))
+
+    def test_cli_redirected_output_is_utf8_under_legacy_encoding(self):
+        result = subprocess.run([sys.executable, '-m', 'sourceledger', '--root', str(self.root), 'check'], capture_output=True, env={**os.environ, 'PYTHONIOENCODING': 'cp1252'})
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('←', result.stdout.decode('utf-8'))
 
     def test_initial_check_does_not_accept(self):
         self.assertEqual(check(self.root)['summary']['new'], 1)

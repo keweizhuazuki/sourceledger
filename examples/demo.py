@@ -4,7 +4,9 @@ from pathlib import Path
 import shutil
 import tempfile
 from sourceledger.core import accept, check
-from sourceledger.cli import render_text, render_html
+from sourceledger.cli import render_text, render_html, configure_output
+
+configure_output()
 
 with tempfile.TemporaryDirectory(prefix="sourceledger-demo-") as directory:
     root = Path(directory) / "handbook"

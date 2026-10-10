@@ -8,6 +8,10 @@ SourceLedger is a local-first review queue for Markdown handbooks, runbooks, res
 
 It does not rewrite your notes, call an LLM, fetch URLs, or decide whether a statement is factually correct.
 
+![Actual desktop report rendered by Chromium in CI](docs/images/report-desktop.png)
+
+[Mobile screenshot](docs/images/report-mobile.png) · [Actual HTML example](docs/example-report.html)
+
 ## Try a complete example
 
 Python 3.10+ and Git are required. No runtime dependencies or service accounts.
@@ -80,7 +84,7 @@ sourceledger --root ./handbook check --format html --output review.html
 sourceledger --root ./handbook check --format json --output review.json
 ```
 
-Use the same `--note` selection for checking and acceptance. A token changes when selected source content, note content, dependency identity, or its accepted baseline changes. A token is a stale-review guard, not a password or signature. Existing output files are never overwritten.
+Use the same `--note` selection for checking and acceptance. A token changes when selected source content, note content, dependency identity, or its accepted baseline changes. A token is a stale-review guard, not a password or signature. Existing output files are never overwritten. CLI output and saved reports use UTF-8.
 
 Exit codes: `0` all selected sources current / action succeeded; `1` new or changed sources require review; `2` invalid configuration, missing source/note/section, unreadable file, or operation error. A missing or renamed source is an error, never an accepted deletion. Correct the path deliberately and review the new dependency.
 

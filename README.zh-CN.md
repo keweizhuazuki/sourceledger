@@ -6,6 +6,10 @@
 
 面向 Markdown 手册、操作指南、研究笔记和智能体知识目录的本地复核队列。声明笔记依赖的本地文件或章节，查看来源差异，检查笔记后再明确确认基线。不会自动改写笔记、调用模型、请求外部网址，也不会判断内容是否真实。
 
+![CI 中 Chromium 实际渲染的桌面报告](docs/images/report-desktop.png)
+
+[手机截图](docs/images/report-mobile.png) · [实际 HTML 示例](docs/example-report.html)
+
 ## 运行完整示例
 
 需要 Python 3.10+ 和 Git；没有运行时依赖，无需服务账号。
@@ -78,7 +82,7 @@ sourceledger --root ./handbook check --format html --output review.html
 sourceledger --root ./handbook check --format json --output review.json
 ```
 
-检查和确认使用相同的 `--note`。所选来源、笔记、依赖标识或已确认基线变化后，旧令牌失效。令牌用于防止确认过时报告，不是密码或签名。不会覆盖已有输出文件。
+检查和确认使用相同的 `--note`。所选来源、笔记、依赖标识或已确认基线变化后，旧令牌失效。令牌用于防止确认过时报告，不是密码或签名。不会覆盖已有输出文件。命令行输出与保存的报告统一使用 UTF-8。
 
 退出码：`0` 所选来源无变化或操作成功；`1` 新增或变化需要复核；`2` 配置错误、来源/笔记/章节缺失、读取失败或操作失败。来源被删除或重命名属于错误，不会自动确认删除；请明确修正路径并重新复核。
 
