@@ -31,6 +31,34 @@ class LedgerTests(unittest.TestCase):
     def baseline(self):
         accept(self.root, check(self.root)['review_token'])
 
+    def test_cli_invalid_roots_are_operation_errors(self):
+        loop = self.root / 'loop'
+        roots = [self.root / 'absent', self.root / 'note.md']
+        try:
+            loop.symlink_to('loop', target_is_directory=True)
+        except (OSError, NotImplementedError):
+            pass  # Missing and regular-file roots are still checked everywhere.
+        else:
+            roots.append(loop)
+        for root in roots:
+            with self.subTest(root=root):
+                result = subprocess.run(
+                    [sys.executable, '-m', 'sourceledger', '--root', str(root), 'check'],
+                    capture_output=True, text=True, encoding='utf-8')
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn('sourceledger:', result.stderr)
+                self.assertNotIn('Traceback', result.stderr)
+                self.assertEqual(result.stdout, '')
+        self.assertFalse((self.root / '.sourceledger').exists())
+
+    def test_cli_root_resolution_exceptions_are_controlled(self):
+        for error in (RuntimeError('Symlink loop'), OSError('Access denied')):
+            with self.subTest(error=error), patch.object(Path, 'resolve', side_effect=error):
+                with contextlib.redirect_stderr(io.StringIO()) as output:
+                    self.assertEqual(main(['--root', str(self.root), 'check']), 2)
+                self.assertIn('sourceledger:', output.getvalue())
+        self.assertFalse((self.root / '.sourceledger').exists())
+
     def test_accept_persists_exact_reviewed_note_hash(self):
         from sourceledger import core
         token = check(self.root)['review_token']

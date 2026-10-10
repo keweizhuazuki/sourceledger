@@ -54,6 +54,8 @@ Expected useful output:
 +Temporary access lasts 14 days. A manager must approve it.
 ```
 
+On Windows without activation, replace `sourceledger` in the commands below with `.venv\Scripts\sourceledger.exe` (from the checkout), or use the full path to that executable from another folder. `python -m pip install .` also supports a normal, non-editable installation; the installed CLI can run outside the checkout. Git is needed for cloning and `suggest-renames`, not for ordinary local reviews.
+
 ## Use your existing knowledge base
 
 1. Run `sourceledger --root /path/to/notes init`.
@@ -85,6 +87,8 @@ sourceledger --root ./handbook check --format json --output review.json
 ```
 
 Use the same `--note` selection for checking and acceptance. A token changes when selected source content, note content, dependency identity, or its accepted baseline changes. A token is a stale-review guard, not a password or signature. Existing output files are never overwritten. CLI output and saved reports use UTF-8.
+
+Invalid knowledge-base roots (missing folders, regular files, inaccessible paths or symlink loops) produce an operation error rather than a review-needed result.
 
 Exit codes: `0` all selected sources current / action succeeded; `1` new or changed sources require review; `2` invalid configuration, missing source/note/section, unreadable file, or operation error. A missing or renamed source is an error, never an accepted deletion. Correct the path deliberately and review the new dependency.
 
@@ -168,7 +172,7 @@ Verified on 2026-10-11 (Asia/Shanghai): [CI run 38069408862](https://github.com/
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; read-only exact staged Git replacement suggestions; 86 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; read-only exact staged Git replacement suggestions; 88 regression tests; controlled invalid-root errors; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 See the [completed changes](CHANGELOG.md).
 
