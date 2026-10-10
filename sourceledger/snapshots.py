@@ -163,9 +163,9 @@ def export_baseline(root):
         with closing(sqlite3.connect(db_path.as_uri() + "?mode=ro", uri=True, timeout=10)) as db:
             db.execute("BEGIN")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version > 1:
+            if version > 2:
                 raise LedgerError(f"Database schema {version} is newer than this SourceLedger supports")
-            if version not in (0, 1):
+            if version not in (0, 1, 2):
                 raise LedgerError(f"Unsupported database schema: {version}")
             for dep in sorted(dependencies, key=dependency_key):
                 # Do not read revisions, history, timestamps or current files.

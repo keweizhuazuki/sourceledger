@@ -11,6 +11,7 @@ from .core import LedgerError, accept, check, read_text, sections, history
 from .discovery import discover
 from .renames import suggest_renames
 from .snapshots import export_baseline, check_baseline
+from .imports import preview_import, apply_import
 
 
 def diff(row):
@@ -83,10 +84,30 @@ def render_discovery(report):
     return "\n".join(lines) + "\n"
 
 
+def render_import(report):
+    lines = ["SourceLedger | reviewed baseline import preview", report["instructions"],
+             "Snapshot SHA-256: " + report["snapshot_digest"],
+             "An empty ledger is required. Existing baselines or history are never replaced."]
+    for entry in report["dependencies"]:
+        lines.extend(["", json.dumps(entry["dependency"], ensure_ascii=False),
+                      "Accepted source text:", entry["accepted"],
+                      "Source SHA-256: " + entry["source_hash"],
+                      "Accepted note SHA-256: " + entry["note_hash"]])
+    lines.extend(["", "Import token: " + report["import_token"],
+                  "Preview made no writes. Review and trust this snapshot before import-baseline FILE --token TOKEN."])
+    return "\n".join(lines) + "\n"
+
+
 def render_history(report):
-    lines = ["SourceLedger | acceptance history (newest first)"]
+    lines = ["SourceLedger | local acceptance history and import provenance"]
+    for imported in report.get("imports", []):
+        lines.append(f"\nImported baseline #{imported['id']} at {imported['imported_at']} (not an original acceptance time)")
+        lines.append("  Snapshot SHA-256: " + imported['snapshot_digest'])
+        for entry in imported['dependencies']:
+            lines.append("  " + json.dumps(entry['dependency'], ensure_ascii=False))
+        lines.append("  Import provenance is separate from local acceptance history and repeats on paginated views.")
     if not report["batches"]:
-        lines.append("No recorded acceptances. Legacy baselines do not have historical timestamps.")
+        lines.append("No recorded local acceptances. Imported or legacy baselines do not establish original acceptance times.")
     for batch in report["batches"]:
         lines.append(f"\n#{batch['id']} {batch['accepted_at']} | scope: {batch['scope_note'] or 'all tracked notes'}")
         for dep in batch["dependencies"]:
@@ -117,6 +138,10 @@ def main(argv=None):
     show.add_argument("--output", type=Path, help="write report to a NEW file; existing files are never overwritten")
     export = sub.add_parser("export-baseline", help="export accepted baselines for the current manifest; never accept current edits")
     export.add_argument("--output", required=True, type=Path, help="write a NEW baseline snapshot file")
+    importing = sub.add_parser("import-baseline", help="preview a baseline import; --token explicitly applies it to an empty ledger")
+    importing.add_argument("snapshot", type=Path)
+    importing.add_argument("--token", help="apply exactly the reviewed import preview; never overwrites existing records")
+    importing.add_argument("--format", choices=["text", "json"], default="text")
     approve = sub.add_parser("accept", help="explicitly accept the exact inspected snapshot")
     approve.add_argument("--token", required=True)
     approve.add_argument("--note")
@@ -149,6 +174,14 @@ def main(argv=None):
                 json.dump({"version": 1, "dependencies": [{"note": "notes/onboarding.md", "source": "sources/policy.md", "heading": "Access", "occurrence": 1}]}, handle, indent=2)
                 handle.write("\n")
             print("Created sourceledger.json. Edit the paths before running check.")
+            return 0
+        if args.command == "import-baseline":
+            if args.token is not None:
+                count = apply_import(root, args.snapshot, args.token)
+                print(json.dumps({"imported": count, "local_acceptances_created": 0}) if args.format == "json" else f"Imported {count} baselines. Import provenance recorded; no local acceptance history was fabricated. Run check to inspect current sources.")
+            else:
+                report = preview_import(root, args.snapshot)
+                print(json.dumps(report, ensure_ascii=False, indent=2) if args.format == "json" else render_import(report), end="\n" if args.format == "json" else "")
             return 0
         if args.command == "export-baseline":
             snapshot = export_baseline(root)

@@ -1,0 +1,30 @@
+Preview: 2 imported dependencies; no database created.
+SourceLedger | local acceptance history and import provenance
+
+Imported baseline #1 at 2026-10-10T18:49:18.530874+00:00 (not an original acceptance time)
+  Snapshot SHA-256: 98ebbc6ec4ef4b549d6086b99706c4869d6365034300ed02454b387980d4d0c9
+  {"heading": "Access", "note": "onboarding.md", "source": "policy.md"}
+  {"note": "onboarding.md", "source": "support.md"}
+  Import provenance is separate from local acceptance history and repeats on paginated views.
+No recorded local acceptances. Imported or legacy baselines do not establish original acceptance times.
+
+SourceLedger | local source review
+0 new, 1 changed, 1 current, 0 error
+
+[CHANGED] onboarding.md ← policy.md → Access [1]
+--- accepted
++++ current
+@@ -1,4 +1,4 @@
+ ## Access
+ 
+-Temporary access lasts 30 days. A manager must approve it.
++Temporary access lasts 14 days. A manager must approve it.
+ 
+
+
+[CURRENT] onboarding.md ← support.md
+
+Review token: 642a4be99a3cb6fbed0a45a223301c16e74c5abf2150a7249a14531717f9e735
+Checking does not accept changes. Use accept --token TOKEN only after reviewing.
+
+Verified: import recorded separately; current edits still need local review.
