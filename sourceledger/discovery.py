@@ -164,7 +164,7 @@ def destination(line, start):
 
 
 def fragment_heading(content, fragment):
-    if re.search(r'<!|<\?|</?[A-Za-z]|^ {0,3}>|^ {0,3}(?:[-*+] |[0-9]+[.)] )+#{1,6} |^ {0,3}(?:=+|-+)\s*$', content, re.MULTILINE):
+    if re.search(r'<!|<\?|</?[A-Za-z]|^ {0,3}>|^ {0,3}(?:[-*+]|[0-9]+[.)])(?:[ \t]+|$)|^ {0,3}(?:=+|-+)\s*$', content, re.MULTILINE):
         raise LedgerError('Fragment requires manual review: HTML, container or Setext syntax can change anchor numbering')
     headings = sections(content)
     if any(not re.fullmatch(r'[\w -]*', item['heading']) for item in headings):
@@ -198,7 +198,7 @@ def resolve_link(root, note, raw):
         raise LedgerError('Absolute source path skipped')
     source = safe_path(root, (Path(note).parent / path).as_posix())
     source_name = source.relative_to(root.resolve()).as_posix()
-    if source_name == note:
+    if source == safe_path(root, note):
         raise LedgerError('Same-document navigation skipped; it is not an external source dependency')
     content = read_text(root, source_name)
     dep = {'note': note, 'source': source_name}

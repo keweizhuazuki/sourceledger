@@ -104,7 +104,7 @@ Supported discovery subset:
 
 - Ordinary single-line inline links, such as `[policy](../sources/policy.md#access)`, angle-bracket destinations with spaces, percent-encoded UTF-8 paths/fragments, balanced/escaped destination parentheses, and optional single/double-quoted titles.
 - Paths resolve relative to the note, stay within the selected root, and point to readable UTF-8 files. Identical dependencies are grouped while retaining every source line.
-- Fragment matching uses a conservative plain-heading profile: all ATX titles in the target must contain only Unicode word characters, ASCII spaces, hyphens or underscores. Lowercase titles replace each space with a hyphen; collisions append `-1`, `-2`, etc. in document order, skipping used slugs. This is not a promise of GitHub/Obsidian/other renderer equivalence. HTML/comment markup, container/Setext heading syntax, non-plain headings or unknown fragments require manual `headings` inspection and explicit configuration.
+- Fragment matching uses a conservative plain-heading profile: all ATX titles in the target must contain only Unicode word characters, ASCII spaces, hyphens or underscores. Lowercase titles replace each space with a hyphen; collisions append `-1`, `-2`, etc. in document order, skipping used slugs. This is not a promise of GitHub/Obsidian/other renderer equivalence. HTML/comment markup, list/blockquote containers or Setext syntax, non-plain headings or unknown fragments require manual `headings` inspection and explicit configuration.
 - Fenced/indented code, inline-code spans and HTML comments are ignored. Raw/inline HTML, reference/wiki-link lines, multiline links/titles, images, query strings, external schemes, and same-document navigation are skipped or reported as unsupported. This is a bounded parser, not complete CommonMark; complex/nested link labels and unmatched delimiters require manual inspection. It may conservatively skip an entire unsupported line/block.
 
 Discovery exits `0` when a report is produced, even with skipped links, or `2` for an invalid requested note/output operation. Candidates are suggestions, never proof of completeness or factual dependency. Source changes after discovery are evaluated by the ordinary `check`/`accept` flow.
@@ -150,7 +150,7 @@ Verified on 2026-10-11 (Asia/Shanghai): [CI run 38067579257](https://github.com/
 
 ## Completed and next upgrades
 
-Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; 62 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
+Completed: section/whole-file dependency tracking; explicit token-bound acceptance; per-note review; missing-source errors; transactional baseline storage; text/JSON/HTML reports; a runnable disposable demo; acceptance history with atomic migration, per-note filters and pagination; read-only reviewed link discovery with path/fragment diagnostics; 64 regression tests; verified Windows UTF-8 output and database cleanup; desktop/mobile browser checks.
 
 See the [completed changes](CHANGELOG.md).
 

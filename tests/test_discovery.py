@@ -81,6 +81,23 @@ class DiscoveryTests(unittest.TestCase):
             self.assertEqual(len(report['candidates'][0]['links']), 1)
             self.assertEqual(report['candidates'][0]['links'][0]['line'], 6)
 
+    def test_list_containers_cannot_shift_fragment_identity(self):
+        for content in ('-  # Access\n  list\n\n# Access\nreal', '- ~~~\n  # Access\n  fake\n  ~~~\n\n# Access\nreal'):
+            self.write('sources/container.md', content)
+            report = self.scan('[a](../sources/container.md#access)')
+            self.assertEqual(report['candidates'], [])
+            self.assertIn('manual review', report['skipped'][0]['reason'])
+
+    def test_symlink_self_navigation_is_not_a_dependency(self):
+        self.write('notes/real.md', '[self](alias.md)')
+        try:
+            (self.root / 'notes/alias.md').symlink_to(self.root / 'notes/real.md')
+        except OSError:
+            self.skipTest('Symlink creation unavailable')
+        report = discover(self.root, ['notes/alias.md'])
+        self.assertEqual(report['candidates'], [])
+        self.assertIn('Same-document', report['skipped'][0]['reason'])
+
     def test_relative_paths_duplicate_fragments_and_deduplication(self):
         report = self.scan('[a](../sources/policy.md#access-1)\n[again](../sources/policy.md#access-1)')
         self.assertEqual(len(report['candidates']), 1)
